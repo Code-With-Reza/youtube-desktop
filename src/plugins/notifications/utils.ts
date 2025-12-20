@@ -5,7 +5,7 @@ import { app, type NativeImage } from 'electron';
 
 import musicPlayerIcon from '@assets/icon.png?asset&asarUnpack';
 
-import { type SongInfo } from '@/providers/song-info';
+import { type VideoInfo } from '@/providers/video-info';
 
 import type { NotificationsPluginConfig } from './index';
 
@@ -42,25 +42,25 @@ const nativeImageToLogo = (nativeImage: NativeImage) => {
 };
 
 export const notificationImage = (
-  songInfo: SongInfo,
+  videoInfo: VideoInfo,
   config: NotificationsPluginConfig,
 ) => {
-  if (!songInfo.image) {
+  if (!videoInfo.image) {
     return musicPlayerIcon;
   }
 
   if (!config.interactive) {
-    return nativeImageToLogo(songInfo.image);
+    return nativeImageToLogo(videoInfo.image);
   }
 
   switch (config.toastStyle) {
     case ToastStyles.logo:
     case ToastStyles.legacy: {
-      return saveImage(nativeImageToLogo(songInfo.image), temporaryIcon);
+      return saveImage(nativeImageToLogo(videoInfo.image), temporaryIcon);
     }
 
     default: {
-      return saveImage(songInfo.image, temporaryBanner);
+      return saveImage(videoInfo.image, temporaryBanner);
     }
   }
 };

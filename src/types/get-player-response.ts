@@ -157,42 +157,44 @@ export interface HeartbeatParams {
 }
 
 export interface Microformat {
-  microformatDataRenderer: MicroformatDataRenderer;
+  playerMicroformatRenderer: MicroformatDataRenderer; // okay
 }
 
 export interface MicroformatDataRenderer {
-  urlCanonical: string;
-  title: string;
-  description: string;
-  thumbnail: ImageClass;
-  siteName: string;
-  appName: string;
-  androidPackage: string;
-  iosAppStoreId: string;
-  iosAppArguments: string;
-  ogType: string;
-  urlApplinksIos: string;
-  urlApplinksAndroid: string;
-  urlTwitterIos: string;
-  urlTwitterAndroid: string;
-  twitterCardType: string;
-  twitterSiteHandle: string;
-  schemaDotOrgType: string;
-  noindex: boolean;
-  unlisted: boolean;
-  paid: boolean;
-  familySafe: boolean;
-  tags: string[];
-  availableCountries: string[];
-  pageOwnerDetails: PageOwnerDetails;
-  videoDetails: MicroformatDataRendererVideoDetails;
-  linkAlternates: LinkAlternate[];
-  viewCount: string;
-  publishDate: string;
-  category: string;
-  uploadDate: string;
+  title: VideoTitle; // okay
+  description: VideoDescription; // okay
+  thumbnail: ImageClass; // okay
+  embed: VideoEmbed; // okay
+  availableCountries: string[]; // okay
+  viewCount: string; // okay
+  publishDate: string; // okay
+  category: string; // okay
+  uploadDate: string; // okay
+  isShortsEligible: boolean; // okay
+  hasYpcMetadata: boolean; // okay
+  isUnlisted: boolean; // okay
+  isFamilySafe: boolean; // okay
+  externalChannelId: string; // okay
+  ownerProfileUrl: string; // okay
+  lengthSeconds: number; // okay
+  liveBroadcastDetails?: LiveBroadcastDetails; // okay
 }
-
+export interface VideoEmbed {
+  iframeUrl: string; // okay
+  width: number; // okay
+  height: number; // okay
+}
+export interface VideoTitle {
+  simpleText: string; // okay
+}
+export interface VideoDescription {
+  simpleText: string; // okay
+}
+export interface LiveBroadcastDetails {
+  isLiveNow: boolean; // okay
+  startTimestamp: string; // okay
+  endTimestamp?: string; // okay
+}
 export interface LinkAlternate {
   hrefUrl: string;
   title?: string;

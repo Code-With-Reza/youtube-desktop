@@ -36,7 +36,7 @@ import { refreshMenu, setApplicationMenu } from '@/menu';
 import { fileExists, injectCSS, injectCSSAsFile } from '@/plugins/utils/main';
 import { isTesting } from '@/utils/testing';
 import { setUpTray } from '@/tray';
-import { setupSongInfo } from '@/providers/song-info';
+import { setupVideoInfo } from '@/providers/video-info';
 import { restart, setupAppControls } from '@/providers/app-controls';
 import {
   APP_PROTOCOL,
@@ -44,7 +44,7 @@ import {
   setupProtocolHandler,
 } from '@/providers/protocol-handler';
 
-import musicPlayerCss from '@/music-player.css?inline';
+import youtubeCSS from '@/youtube.css?inline';
 
 import {
   forceLoadMainPlugin,
@@ -54,7 +54,7 @@ import {
 } from '@/loader/main';
 
 import { LoggerPrefix } from '@/utils';
-import { APPLICATION_NAME, loadI18n, setLanguage, t } from '@/i18n';
+import { loadI18n, setLanguage, t } from '@/i18n';
 
 import ErrorHtmlAsset from '@assets/error.html?asset';
 
@@ -163,7 +163,7 @@ electronDebug({
   showDevTools: false, // Disable automatic devTools on new window
 });
 
-let icon = 'assets/icon.png';
+let icon = 'assets/YouTube.png';
 if (process.platform === 'win32') {
   icon = 'assets/generated/icons/win/icon.ico';
 } else if (process.platform === 'darwin') {
@@ -176,7 +176,7 @@ function onClosed() {
   mainWindow = null;
 }
 
-ipcMain.handle('peard:get-main-plugin-names', async () =>
+ipcMain.handle('ytd:get-main-plugin-names', async () =>
   Object.keys(await mainPlugins()),
 );
 
@@ -184,14 +184,14 @@ const initHook = async (win: BrowserWindow) => {
   const allPluginStubs = await allPlugins();
 
   ipcMain.handle(
-    'peard:get-config',
+    'ytd:get-config',
     (_, id: string) =>
       deepmerge(
         allPluginStubs[id].config ?? { enabled: false },
         config.get(`plugins.${id}`) ?? {},
       ) as PluginConfig,
   );
-  ipcMain.handle('peard:set-config', (_, name: string, obj: object) =>
+  ipcMain.handle('ytd:set-config', (_, name: string, obj: object) =>
     config.setPartial(`plugins.${name}`, obj, allPluginStubs[name].config),
   );
 
@@ -290,7 +290,45 @@ const showNeedToRestartDialog = async (id: string) => {
 };
 
 function initTheme(win: BrowserWindow) {
-  injectCSS(win.webContents, musicPlayerCss);
+  injectCSS(win.webContents, youtubeCSS);
+  // Mac-specific CSS
+  if (is.macOS()) {
+    const macStyles = `
+      :root {
+        --titlebar-background-color: var(--ytmusic-color-black3);
+        --menu-bar-height: 32px;
+      }
+      ytd-video-preview {
+        margin-top: calc(-1 * var(--menu-bar-height, 36px)) !important;
+      }
+      ytd-masthead, ytd-mini-guide-renderer, ytd-app, tp-yt-app-drawer {
+        overflow: scroll;
+        margin-top: var(--menu-bar-height, 36px) !important;
+      }
+      
+      ytd-feed-filter-chip-bar-renderer:not([not-sticky]) #chips-wrapper {
+        margin-top: var(--menu-bar-height, 36px) !important;
+      }
+      
+      ytmusic-app-layout {
+        overflow: scroll;
+        height: calc(100vh - var(--menu-bar-height, 36px));
+        margin-top: var(--menu-bar-height, 36px) !important;
+      }
+    `;
+    const titleBarHackMac =
+      'var div = document.createElement("div");' +
+      'div.style.position = "fixed";' +
+      'div.style.top = 0;' +
+      'div.style.zIndex = 10000000;' +
+      'div.style.background = "#0f0f0f";' +
+      'div.style.height = "34px";' +
+      'div.style.width = "100%";' +
+      'div.style["-webkit-app-region"] = "drag";' +
+      'document.body.appendChild(div);';
+    injectCSS(win.webContents, macStyles);
+    win.webContents.executeJavaScript(titleBarHackMac)
+  }
   // Load user CSS
   const themes: string[] = config.get('options.themes');
   if (Array.isArray(themes)) {
@@ -361,10 +399,10 @@ async function createMainWindow() {
       ...(isTesting()
         ? undefined
         : {
-            // Sandbox is only enabled in tests for now
-            // See https://www.electronjs.org/docs/latest/tutorial/sandbox#preload-scripts
-            sandbox: false,
-          }),
+          // Sandbox is only enabled in tests for now
+          // See https://www.electronjs.org/docs/latest/tutorial/sandbox#preload-scripts
+          sandbox: false,
+        }),
     },
     ...decorations,
   };
@@ -492,7 +530,7 @@ async function createMainWindow() {
         ...defaultTitleBarOverlayOptions,
         height: Math.floor(
           defaultTitleBarOverlayOptions.height! *
-            win.webContents.getZoomFactor(),
+          win.webContents.getZoomFactor(),
         ),
       });
     }
@@ -502,13 +540,13 @@ async function createMainWindow() {
 
     // Workarounds for regions where YTM is restricted
     if (
-      url.hostname.endsWith('\u0079\u006f\u0075\u0074\u0075\u0062\u0065.com') &&
+      url.hostname.endsWith('youtube.com') &&
       url.pathname === '/premium'
     ) {
       event.preventDefault();
 
       win.webContents.loadURL(
-        'https://accounts.google.com/ServiceLogin?ltmpl=music&service=\u0079\u006f\u0075\u0074\u0075\u0062\u0065&continue=https%3A%2F%2Fwww.\u0079\u006f\u0075\u0074\u0075\u0062\u0065.com%2Fsignin%3Faction_handle_signin%3Dtrue%26next%3Dhttps%253A%252F%252Fmusic.\u0079\u006f\u0075\u0074\u0075\u0062\u0065.com%252F',
+        'https://accounts.google.com/ServiceLogin?ltmpl=music&service=youtube&continue=https%3A%2F%2Fwww.youtube.com%2Fsignin%3Faction_handle_signin%3Dtrue%26next%3Dhttps%253A%252F%252Fyoutube.com%252F',
       );
     }
   });
@@ -552,7 +590,7 @@ app.once('browser-window-created', (_event, win) => {
     });
   }
 
-  setupSongInfo(win);
+  setupVideoInfo(win);
   setupAppControls();
 
   win.webContents.on(
@@ -662,7 +700,7 @@ app.whenReady().then(async () => {
   // Register appID on windows
   if (is.windows()) {
     const appID =
-      'com.github.th-ch.\u0079\u006f\u0075\u0074\u0075\u0062\u0065\u002d\u006d\u0075\u0073\u0069\u0063';
+      'com.github.kikots.youtube';
     app.setAppUserModelId(appID);
     const appLocation = process.execPath;
     const appData = app.getPath('appData');
@@ -677,7 +715,7 @@ app.whenReady().then(async () => {
         'Windows',
         'Start Menu',
         'Programs',
-        `${APPLICATION_NAME}.lnk`,
+        'YouTube.lnk',
       );
       try {
         // Check if shortcut is registered and valid
@@ -697,13 +735,25 @@ app.whenReady().then(async () => {
           {
             target: appLocation,
             cwd: path.dirname(appLocation),
-            description: `${APPLICATION_NAME} Desktop App - including custom plugins`,
+            description: 'YouTube Desktop App - including custom plugins',
             appUserModelId: appID,
           },
         );
       }
     }
   }
+
+  ipcMain.on('go-back', () => {
+    if (mainWindow && mainWindow.webContents.navigationHistory.canGoBack()) {
+      mainWindow.webContents.navigationHistory.goBack();
+    }
+  })
+
+  ipcMain.on('go-forward', () => {
+    if (mainWindow && mainWindow.webContents.navigationHistory.canGoForward()) {
+      mainWindow.webContents.navigationHistory.goForward();
+    }
+  })
 
   ipcMain.on('get-renderer-script', (event) => {
     // Inject index.html file as string using insertAdjacentHTML

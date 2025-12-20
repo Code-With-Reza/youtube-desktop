@@ -3,8 +3,8 @@ import { createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 
 import { defaultConfig } from '@/config/defaults';
-import { getSongMenu } from '@/providers/dom-elements';
-import { getSongInfo } from '@/providers/song-info-front';
+import { getVideoMenu } from '@/providers/dom-elements';
+import { getVideoInfo } from '@/providers/video-info-front';
 import { t } from '@/i18n';
 import {
   isAlbumOrPlaylist,
@@ -23,7 +23,7 @@ const [downloadButtonText, setDownloadButtonText] = createSignal<string>('');
 let buttonContainer: HTMLDivElement | null = null;
 
 const menuObserver = new MutationObserver(() => {
-  const menu = getSongMenu();
+  const menu = getVideoMenu();
 
   if (
     !menu ||
@@ -41,7 +41,7 @@ export const onRendererLoad = ({
   ipc,
 }: RendererContext<DownloaderPluginConfig>) => {
   download = () => {
-    const songMenu = getSongMenu();
+    const songMenu = getVideoMenu();
 
     let videoUrl = songMenu
       ?.querySelector(
@@ -75,7 +75,7 @@ export const onRendererLoad = ({
         return;
       }
     } else {
-      videoUrl = getSongInfo().url || window.location.href;
+      videoUrl = getVideoInfo().url || window.location.href;
     }
 
     ipc.invoke('download-song', videoUrl);

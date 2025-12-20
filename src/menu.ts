@@ -294,12 +294,12 @@ export const mainMenuTemplate = async (
               submenu: [
                 ...((config.get('options.themes')?.length ?? 0) === 0
                   ? [
-                      {
-                        label: t(
-                          'main.menu.options.submenu.visual-tweaks.submenu.theme.submenu.no-theme',
-                        ),
-                      },
-                    ]
+                    {
+                      label: t(
+                        'main.menu.options.submenu.visual-tweaks.submenu.theme.submenu.no-theme',
+                      ),
+                    },
+                  ]
                   : []),
                 ...(config.get('options.themes')?.map((theme: string) => ({
                   type: 'normal' as const,
@@ -380,40 +380,40 @@ export const mainMenuTemplate = async (
         },
         ...((is.windows() || is.linux()
           ? [
-              {
-                label: t('main.menu.options.submenu.hide-menu.label'),
-                type: 'checkbox',
-                checked: config.get('options.hideMenu'),
-                click(item) {
-                  config.setMenuOption('options.hideMenu', item.checked);
-                  if (item.checked && !config.get('options.hideMenuWarned')) {
-                    dialog.showMessageBox(win, {
-                      type: 'info',
-                      title: t(
-                        'main.menu.options.submenu.hide-menu.dialog.title',
-                      ),
-                      message: t(
-                        'main.menu.options.submenu.hide-menu.dialog.message',
-                      ),
-                    });
-                  }
-                },
+            {
+              label: t('main.menu.options.submenu.hide-menu.label'),
+              type: 'checkbox',
+              checked: config.get('options.hideMenu'),
+              click(item) {
+                config.setMenuOption('options.hideMenu', item.checked);
+                if (item.checked && !config.get('options.hideMenuWarned')) {
+                  dialog.showMessageBox(win, {
+                    type: 'info',
+                    title: t(
+                      'main.menu.options.submenu.hide-menu.dialog.title',
+                    ),
+                    message: t(
+                      'main.menu.options.submenu.hide-menu.dialog.message',
+                    ),
+                  });
+                }
               },
-            ]
+            },
+          ]
           : []) satisfies Electron.MenuItemConstructorOptions[]),
         ...((is.windows() || is.macOS()
           ? // Only works on Win/Mac
-            // https://www.electronjs.org/docs/api/app#appsetloginitemsettingssettings-macos-windows
-            [
-              {
-                label: t('main.menu.options.submenu.start-at-login'),
-                type: 'checkbox',
-                checked: config.get('options.startAtLogin'),
-                click(item) {
-                  config.setMenuOption('options.startAtLogin', item.checked);
-                },
+          // https://www.electronjs.org/docs/api/app#appsetloginitemsettingssettings-macos-windows
+          [
+            {
+              label: t('main.menu.options.submenu.start-at-login'),
+              type: 'checkbox',
+              checked: config.get('options.startAtLogin'),
+              click(item) {
+                config.setMenuOption('options.startAtLogin', item.checked);
               },
-            ]
+            },
+          ]
           : []) satisfies Electron.MenuItemConstructorOptions[]),
         {
           label: t('main.menu.options.submenu.tray.label'),
@@ -476,7 +476,7 @@ export const mainMenuTemplate = async (
               ),
               type: 'normal',
               click() {
-                const url = 'https://bit.ly/48n5YF7';
+                const url = 'https://hosted.weblate.org/engage/youtube/';
                 shell.openExternal(url);
               },
             } as Electron.MenuItemConstructorOptions,
@@ -567,25 +567,25 @@ export const mainMenuTemplate = async (
             { type: 'separator' },
             is.macOS()
               ? {
-                  label: t(
-                    'main.menu.options.submenu.advanced-options.submenu.toggle-dev-tools',
-                  ),
-                  // Cannot use "toggleDevTools" role in macOS
-                  click() {
-                    const { webContents } = win;
-                    if (webContents.isDevToolsOpened()) {
-                      webContents.closeDevTools();
-                    } else {
-                      webContents.openDevTools();
-                    }
-                  },
-                }
-              : {
-                  label: t(
-                    'main.menu.options.submenu.advanced-options.submenu.toggle-dev-tools',
-                  ),
-                  role: 'toggleDevTools',
+                label: t(
+                  'main.menu.options.submenu.advanced-options.submenu.toggle-dev-tools',
+                ),
+                // Cannot use "toggleDevTools" role in macOS
+                click() {
+                  const { webContents } = win;
+                  if (webContents.isDevToolsOpened()) {
+                    webContents.closeDevTools();
+                  } else {
+                    webContents.openDevTools();
+                  }
                 },
+              }
+              : {
+                label: t(
+                  'main.menu.options.submenu.advanced-options.submenu.toggle-dev-tools',
+                ),
+                role: 'toggleDevTools',
+              },
             {
               label: t(
                 'main.menu.options.submenu.advanced-options.submenu.edit-config-json',

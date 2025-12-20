@@ -57,8 +57,9 @@ export default createPlugin({
       const config = await getConfig();
 
       document.addEventListener(
-        'peard:audio-can-play',
-        ({ detail: { audioSource, audioContext } }) => {
+        'ytd:audio-can-play',
+        ((e: CustomEvent) => {
+          const { audioSource, audioContext } = e.detail;
           const filtersToApply = config.filters.concat(
             defaultPresets
               .filter((preset) => config.presets[preset])
@@ -76,7 +77,7 @@ export default createPlugin({
 
             appliedFilters.push(biquadFilter);
           });
-        },
+        }) as unknown as EventListener,
         { once: true, passive: true },
       );
     },

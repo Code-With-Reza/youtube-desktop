@@ -7,12 +7,12 @@ import * as config from '@/config';
 export const restart = () => restartInternal();
 
 export const setupAppControls = () => {
-  ipcMain.on('peard:restart', restart);
-  ipcMain.handle('peard:get-downloads-folder', () => app.getPath('downloads'));
-  ipcMain.on('peard:reload', () =>
+  ipcMain.on('ytd:restart', restart);
+  ipcMain.handle('ytd:get-downloads-folder', () => app.getPath('downloads'));
+  ipcMain.on('ytd:reload', () =>
     BrowserWindow.getFocusedWindow()?.webContents.loadURL(config.get('url')),
   );
-  ipcMain.handle('peard:get-path', (_, ...args: string[]) => path.join(...args));
+  ipcMain.handle('ytd:get-path', (_, ...args: string[]) => path.join(...args));
 };
 
 function restartInternal() {
@@ -31,5 +31,5 @@ export const sendToFront =
   process.type === 'browser'
     ? sendToFrontInternal
     : () => {
-        console.error('sendToFront called from renderer');
-      };
+      console.error('sendToFront called from renderer');
+    };

@@ -2,7 +2,7 @@ import { render } from 'solid-js/web';
 
 import { createSignal } from 'solid-js';
 
-import { getSongMenu } from '@/providers/dom-elements';
+import { getVideoMenu } from '@/providers/dom-elements';
 
 import { PlaybackSpeedSlider } from './components/slider';
 import { t } from '@/i18n';
@@ -84,7 +84,7 @@ export const onPlayerApiReady = () => {
     );
 
     const observer = new MutationObserver(() => {
-      const menu = getSongMenu();
+      const menu = getVideoMenu();
 
       if (
         menu &&
@@ -109,7 +109,7 @@ export const onPlayerApiReady = () => {
     const video = document.querySelector<HTMLVideoElement>('video');
     if (video) {
       video.addEventListener('ratechange', forcePlaybackRate);
-      video.addEventListener('peard:src-changed', forcePlaybackRate);
+      video.addEventListener('ytd:src-changed', forcePlaybackRate);
     }
   };
 
@@ -121,7 +121,7 @@ export const onUnload = () => {
   const video = document.querySelector<HTMLVideoElement>('video');
   if (video) {
     video.removeEventListener('ratechange', forcePlaybackRate);
-    video.removeEventListener('peard:src-changed', forcePlaybackRate);
+    video.removeEventListener('ytd:src-changed', forcePlaybackRate);
   }
-  getSongMenu()?.removeChild(sliderContainer);
+  getVideoMenu()?.removeChild(sliderContainer);
 };

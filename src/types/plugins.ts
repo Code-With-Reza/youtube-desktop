@@ -1,4 +1,4 @@
-import type { MusicPlayer } from '@/types/music-player';
+import type { YoutubePlayer } from '@/types/youtube-player';
 
 import type {
   BackendContext,
@@ -26,7 +26,7 @@ export type RendererPluginLifecycleExtra<Config, Context, This> = This &
   PluginLifecycleExtra<Config, Context, This> & {
     onPlayerApiReady?: (
       this: This,
-      playerApi: MusicPlayer,
+      playerApi: YoutubePlayer,
       context: Context,
     ) => void | Promise<void>;
   };

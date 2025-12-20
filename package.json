@@ -1,17 +1,17 @@
 {
-  "name": "\u0079\u006f\u0075\u0074\u0075\u0062\u0065\u002d\u006d\u0075\u0073\u0069\u0063",
-  "desktopName": "com.github.th_ch.\u0079\u006f\u0075\u0074\u0075\u0062\u0065\u005f\u006d\u0075\u0073\u0069\u0063",
-  "productName": "\u0059\u006f\u0075\u0054\u0075\u0062\u0065\u0020\u004d\u0075\u0073\u0069\u0063",
+  "name": "youtube-desktop",
+  "desktopName": "com.github.kikots.youtube",
+  "productName": "YouTube",
   "version": "3.11.0",
-  "description": "\u0059\u006f\u0075\u0054\u0075\u0062\u0065\u0020\u004d\u0075\u0073\u0069\u0063 Desktop App - including custom plugins",
+  "description": "YouTube Desktop App - including custom plugins",
   "main": "./dist/main/index.js",
   "type": "module",
   "license": "MIT",
-  "repository": "pear-devs/pear-desktop",
+  "repository": "KikoTs/youtube-desktop",
   "author": {
-    "name": "th-ch",
-    "email": "th-ch@users.noreply.github.com",
-    "url": "https://github.com/pear-devs/pear-desktop"
+    "name": "KikoTs",
+    "email": "KikoTs@users.noreply.github.com",
+    "url": "https://github.com/KikoTs/youtube-desktop"
   },
   "scripts": {
     "test": "pnpm playwright test",
@@ -100,6 +100,7 @@
     "electron-unhandled": "5.0.0",
     "electron-updater": "6.6.2",
     "es-hangul": "2.3.8",
+    "extract-zip": "^2.0.1",
     "fast-average-color": "9.5.0",
     "fast-equals": "5.2.2",
     "fflate": "0.8.2",
@@ -123,6 +124,7 @@
     "peerjs": "1.5.5",
     "semver": "7.7.3",
     "serve": "14.2.5",
+    "simple-youtube-age-restriction-bypass": "github:organization/Simple-YouTube-Age-Restriction-Bypass#v2.5.9",
     "socks": "2.8.7",
     "solid-element": "1.9.1",
     "solid-floating-ui": "0.3.1",

@@ -14,7 +14,7 @@ import {
 } from './utils';
 
 import type { DiscordPluginConfig } from './index';
-import type { SongInfo } from '@/providers/song-info';
+import type { VideoInfo } from '@/providers/video-info';
 import type { SetActivity } from '@xhayper/discord-rpc/dist/structures/ClientUser';
 
 // Public API definition for the Discord Service
@@ -34,7 +34,7 @@ export class DiscordService {
   /**
    * Cached song information from the last activity update.
    */
-  lastSongInfo?: SongInfo;
+  lastVideoInfo?: VideoInfo;
   /**
    * Timestamp of the last progress update sent to Discord.
    */
@@ -71,8 +71,8 @@ export class DiscordService {
 
     this.rpc.on('ready', () => {
       this.ready = true;
-      if (this.lastSongInfo && this.config) {
-        this.updateActivity(this.lastSongInfo);
+      if (this.lastVideoInfo && this.config) {
+        this.updateActivity(this.lastVideoInfo);
       }
     });
 
@@ -86,42 +86,42 @@ export class DiscordService {
 
   /**
    * Builds the SetActivity payload for Discord Rich Presence.
-   * @param songInfo - Current song information.
+   * @param videoInfo - Current song information.
    * @param config - Plugin configuration.
    * @returns The SetActivity object.
    */
   private buildActivityInfo(
-    songInfo: SongInfo,
+    videoInfo: VideoInfo,
     config: DiscordPluginConfig,
   ): SetActivity {
-    padHangulFields(songInfo);
+    padHangulFields(videoInfo);
 
     const activityInfo: SetActivity = {
       type: ActivityType.Listening,
       statusDisplayType: config.statusDisplayType,
-      details: truncateString(songInfo.alternativeTitle ?? songInfo.title, 128), // Song title
-      detailsUrl: songInfo.url ?? undefined,
-      state: truncateString(songInfo.tags?.at(0) ?? songInfo.artist, 128), // Artist name
-      stateUrl: songInfo.artistUrl,
-      largeImageKey: songInfo.imageSrc ?? undefined,
-      largeImageText: songInfo.album
-        ? truncateString(songInfo.album, 128)
+      details: truncateString(videoInfo.alternativeTitle ?? videoInfo.title, 128), // Song title
+      detailsUrl: videoInfo.url ?? undefined,
+      state: truncateString(videoInfo.tags?.at(0) ?? videoInfo.artist, 128), // Artist name
+      stateUrl: undefined,
+      largeImageKey: videoInfo.imageSrc ?? undefined,
+      largeImageText: videoInfo.album
+        ? truncateString(videoInfo.album, 128)
         : undefined,
-      buttons: buildDiscordButtons(config, songInfo),
+      buttons: buildDiscordButtons(config, videoInfo),
     };
 
     // Handle paused state display
-    if (songInfo.isPaused) {
+    if (videoInfo.isPaused) {
       activityInfo.largeImageText = '⏸︎';
     } else if (
       !config.hideDurationLeft &&
-      songInfo.songDuration > 0 &&
-      typeof songInfo.elapsedSeconds === 'number'
+      videoInfo.songDuration > 0 &&
+      typeof videoInfo.elapsedSeconds === 'number'
     ) {
-      const songStartTime = Date.now() - songInfo.elapsedSeconds * 1000;
+      const songStartTime = Date.now() - videoInfo.elapsedSeconds * 1000;
       activityInfo.startTimestamp = Math.floor(songStartTime / 1000);
       activityInfo.endTimestamp = Math.floor(
-        (songStartTime + songInfo.songDuration * 1000) / 1000,
+        (songStartTime + videoInfo.songDuration * 1000) / 1000,
       );
     }
 
@@ -136,7 +136,7 @@ export class DiscordService {
     this.timerManager.clear(TimerKey.ClearActivity); // Clear any existing timeout
 
     if (
-      this.lastSongInfo?.isPaused === true && // Music must be paused
+      this.lastVideoInfo?.isPaused === true && // Music must be paused
       this.config?.activityTimeoutEnabled && // Timeout must be enabled in config
       this.config?.activityTimeoutTime && // Timeout duration must be set
       this.config.activityTimeoutTime > 0 // Timeout duration must be positive
@@ -156,7 +156,7 @@ export class DiscordService {
    */
   private resetInfo() {
     this.ready = false;
-    this.lastSongInfo = undefined;
+    this.lastVideoInfo = undefined;
     this.lastProgressUpdate = 0;
     this.timerManager.clearAll();
     if (dev()) {
@@ -264,15 +264,15 @@ export class DiscordService {
    * Updates the Discord Rich Presence based on the current song information.
    * Handles throttling logic to avoid excessive updates.
    * Detects changes in song, pause state, or seeks for immediate updates.
-   * @param songInfo - The current song information.
+   * @param videoInfo - The current song information.
    */
-  updateActivity(songInfo: SongInfo): void {
+  updateActivity(videoInfo: VideoInfo): void {
     if (!this.config) return;
 
-    if (!songInfo.title && !songInfo.artist) {
-      if (this.lastSongInfo?.videoId) {
+    if (!videoInfo.title && !videoInfo.artist) {
+      if (this.lastVideoInfo?.videoId) {
         this.clearActivity();
-        this.lastSongInfo = undefined;
+        this.lastVideoInfo = undefined;
       }
       return;
     }
@@ -286,37 +286,37 @@ export class DiscordService {
     }
 
     const now = Date.now();
-    const elapsedSeconds = songInfo.elapsedSeconds ?? 0;
+    const elapsedSeconds = videoInfo.elapsedSeconds ?? 0;
 
-    const songChanged = songInfo.videoId !== this.lastSongInfo?.videoId;
-    const pauseChanged = songInfo.isPaused !== this.lastSongInfo?.isPaused;
+    const songChanged = videoInfo.videoId !== this.lastVideoInfo?.videoId;
+    const pauseChanged = videoInfo.isPaused !== this.lastVideoInfo?.isPaused;
     const seeked =
       !songChanged &&
-      isSeek(this.lastSongInfo?.elapsedSeconds ?? 0, elapsedSeconds);
+      isSeek(this.lastVideoInfo?.elapsedSeconds ?? 0, elapsedSeconds);
 
     if (
       (songChanged || pauseChanged || seeked) &&
-      this.lastSongInfo !== undefined
+      this.lastVideoInfo !== undefined
     ) {
       this.timerManager.clear(TimerKey.UpdateTimeout);
 
-      const activityInfo = this.buildActivityInfo(songInfo, this.config);
+      const activityInfo = this.buildActivityInfo(videoInfo, this.config);
       this.rpc.user
         ?.setActivity(activityInfo)
         .catch((err) =>
           console.error(LoggerPrefix, 'Failed to set activity:', err),
         );
 
-      this.lastSongInfo.videoId = songInfo.videoId;
-      this.lastSongInfo.isPaused = songInfo.isPaused ?? false;
-      this.lastSongInfo.elapsedSeconds = elapsedSeconds;
+      this.lastVideoInfo.videoId = videoInfo.videoId;
+      this.lastVideoInfo.isPaused = videoInfo.isPaused ?? false;
+      this.lastVideoInfo.elapsedSeconds = elapsedSeconds;
       this.lastProgressUpdate = now;
 
       this.setActivityTimeout();
     } else if (now - this.lastProgressUpdate > PROGRESS_THROTTLE_MS) {
       this.timerManager.clear(TimerKey.UpdateTimeout);
 
-      const activityInfo = this.buildActivityInfo(songInfo, this.config);
+      const activityInfo = this.buildActivityInfo(videoInfo, this.config);
       this.rpc.user
         ?.setActivity(activityInfo)
         .catch((err) =>
@@ -328,31 +328,31 @@ export class DiscordService {
     } else {
       const remainingThrottle =
         PROGRESS_THROTTLE_MS - (now - this.lastProgressUpdate);
-      const songInfoSnapshot = { ...songInfo };
+      const videoInfoSnapshot = { ...videoInfo };
 
       this.timerManager.set(
         TimerKey.UpdateTimeout,
         () => {
           if (
-            this.lastSongInfo?.videoId === songInfoSnapshot.videoId &&
-            this.lastSongInfo?.isPaused === songInfoSnapshot.isPaused &&
+            this.lastVideoInfo?.videoId === videoInfoSnapshot.videoId &&
+            this.lastVideoInfo?.isPaused === videoInfoSnapshot.isPaused &&
             this.config
           ) {
             const activityInfo = this.buildActivityInfo(
-              songInfoSnapshot,
+              videoInfoSnapshot,
               this.config,
             );
             this.rpc.user?.setActivity(activityInfo);
             this.lastProgressUpdate = Date.now();
-            this.lastSongInfo.elapsedSeconds =
-              songInfoSnapshot.elapsedSeconds ?? 0;
+            this.lastVideoInfo.elapsedSeconds =
+              videoInfoSnapshot.elapsedSeconds ?? 0;
             this.setActivityTimeout();
           }
         },
         remainingThrottle,
       );
     }
-    this.lastSongInfo = { ...songInfo };
+    this.lastVideoInfo = { ...videoInfo };
   }
 
   /**
@@ -363,7 +363,7 @@ export class DiscordService {
       this.rpc.user?.clearActivity();
     }
     this.lastProgressUpdate = 0;
-    this.lastSongInfo = undefined;
+    this.lastVideoInfo = undefined;
     this.timerManager.clear(TimerKey.ClearActivity);
     this.timerManager.clear(TimerKey.UpdateTimeout);
   }
@@ -376,8 +376,8 @@ export class DiscordService {
     this.config = newConfig;
     this.autoReconnect = newConfig.autoReconnect ?? true;
 
-    if (this.lastSongInfo && this.ready && this.rpc.isConnected) {
-      this.updateActivity(this.lastSongInfo);
+    if (this.lastVideoInfo && this.ready && this.rpc.isConnected) {
+      this.updateActivity(this.lastVideoInfo);
     }
 
     this.setActivityTimeout();

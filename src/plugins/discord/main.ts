@@ -1,6 +1,6 @@
 import { app } from 'electron';
 
-import { registerCallback, SongInfoEvent } from '@/providers/song-info';
+import registerCallback, { VideoInfoEvent } from '@/providers/video-info';
 import { createBackend } from '@/utils';
 
 import { DiscordService } from './discord-service';
@@ -28,16 +28,16 @@ export const backend = createBackend<
       ctx.window.once('ready-to-show', () => {
         discordService?.connect(!config.autoReconnect);
 
-        registerCallback((songInfo, event) => {
+        registerCallback((videoInfo, event) => {
           if (!discordService?.isConnected()) return;
 
-          if (event !== SongInfoEvent.TimeChanged) {
-            discordService?.updateActivity(songInfo);
+          if (event !== VideoInfoEvent.TimeChanged) {
+            discordService?.updateActivity(videoInfo);
             this.lastTimeUpdateSent = Date.now();
           } else {
             const now = Date.now();
             if (now - this.lastTimeUpdateSent > TIME_UPDATE_DEBOUNCE_MS) {
-              discordService?.updateActivity(songInfo);
+              discordService?.updateActivity(videoInfo);
               this.lastTimeUpdateSent = now; // Record the time of this debounced update
             }
           }
@@ -45,8 +45,8 @@ export const backend = createBackend<
       });
     }
 
-    ctx.ipc.on('peard:player-api-loaded', () => {
-      ctx.ipc.send('peard:setup-time-changed-listener');
+    ctx.ipc.on('ytd:player-api-loaded', () => {
+      ctx.ipc.send('ytd:setup-time-changed-listener');
     });
 
     app.on('before-quit', () => {

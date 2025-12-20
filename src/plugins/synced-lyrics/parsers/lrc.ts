@@ -1,89 +1,31 @@
-interface LRCTag {
-  tag: string;
-  value: string;
+export interface LyricLine {
+    text: string;
+    start: number;
 }
 
-interface LRCLine {
-  time: string;
-  timeInMs: number;
-  duration: number;
-  text: string;
+export interface LyricData {
+    lines: LyricLine[];
 }
-
-interface LRC {
-  tags: LRCTag[];
-  lines: LRCLine[];
-}
-
-const tagRegex = /^\[(?<tag>\w+):\s*(?<value>.+?)\s*\]$/;
-// prettier-ignore
-const lyricRegex = /^\[(?<minutes>\d+):(?<seconds>\d+)\.(?<milliseconds>\d+)\](?<text>.+)$/;
 
 export const LRC = {
-  parse: (text: string): LRC => {
-    const lrc: LRC = {
-      tags: [],
-      lines: [],
-    };
+    parse(lrc: string): LyricData {
+        const lines: LyricLine[] = [];
+        const lyricLines = lrc.split('\n');
+        const timeReg = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
 
-    let offset = 0;
-    let previousLine: LRCLine | null = null;
-
-    for (const line of text.split('\n')) {
-      if (!line.trim().startsWith('[')) continue;
-
-      const lyric = line.match(lyricRegex)?.groups;
-      if (!lyric) {
-        const tag = line.match(tagRegex)?.groups;
-        if (tag) {
-          if (tag.tag === 'offset') {
-            offset = parseInt(tag.value);
-            continue;
-          }
-
-          lrc.tags.push({
-            tag: tag.tag,
-            value: tag.value,
-          });
+        for (const line of lyricLines) {
+            const match = timeReg.exec(line);
+            if (match) {
+                const min = parseInt(match[1], 10);
+                const sec = parseInt(match[2], 10);
+                const ms = parseInt(match[3], 10) * (match[3].length === 2 ? 10 : 1);
+                const start = min * 60 + sec + ms / 1000;
+                const text = line.replace(timeReg, '').trim();
+                lines.push({ text, start });
+            }
         }
-        continue;
-      }
 
-      const { minutes, seconds, milliseconds, text } = lyric;
-      const timeInMs =
-        parseInt(minutes) * 60 * 1000 +
-        parseInt(seconds) * 1000 +
-        parseInt(milliseconds);
-
-      const currentLine: LRCLine = {
-        time: `${minutes}:${seconds}:${milliseconds}`,
-        timeInMs,
-        text: text.trim(),
-        duration: Infinity,
-      };
-
-      if (previousLine) {
-        previousLine.duration = timeInMs - previousLine.timeInMs;
-      }
-
-      previousLine = currentLine;
-      lrc.lines.push(currentLine);
-    }
-
-    for (const line of lrc.lines) {
-      line.timeInMs += offset;
-    }
-
-    const first = lrc.lines.at(0);
-    if (first && first.timeInMs > 300) {
-      lrc.lines.unshift({
-        time: '0:0:0',
-        timeInMs: 0,
-        duration: first.timeInMs,
-        text: '',
-      });
-    }
-
-    return lrc;
-  },
+        lines.sort((a, b) => a.start - b.start);
+        return { lines };
+    },
 };

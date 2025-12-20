@@ -1,7 +1,7 @@
 import { createStore } from 'solid-js/store';
 import { createMemo } from 'solid-js';
 
-import { getSongInfo } from '@/providers/song-info-front';
+import { getVideoInfo } from '@/providers/video-info-front';
 
 import {
   type ProviderName,
@@ -11,7 +11,7 @@ import {
 import { providers } from '../providers/renderer';
 
 import type { LyricProvider } from '../types';
-import type { SongInfo } from '@/providers/song-info';
+import type { VideoInfo } from '@/providers/video-info';
 
 type LyricsStore = {
   provider: ProviderName;
@@ -51,7 +51,7 @@ interface SearchCache {
 
 // TODO: Maybe use localStorage for the cache.
 const searchCache = new Map<VideoId, SearchCache>();
-export const fetchLyrics = (info: SongInfo) => {
+export const fetchLyrics = (info: VideoInfo) => {
   if (searchCache.has(info.videoId)) {
     const cache = searchCache.get(info.videoId)!;
 
@@ -62,7 +62,7 @@ export const fetchLyrics = (info: SongInfo) => {
       return;
     }
 
-    if (getSongInfo().videoId === info.videoId) {
+    if (getVideoInfo().videoId === info.videoId) {
       setLyricsStore('lyrics', () => {
         // weird bug with solid-js
         return JSON.parse(JSON.stringify(cache.data)) as typeof cache.data;
@@ -78,7 +78,7 @@ export const fetchLyrics = (info: SongInfo) => {
   };
 
   searchCache.set(info.videoId, cache);
-  if (getSongInfo().videoId === info.videoId) {
+  if (getVideoInfo().videoId === info.videoId) {
     setLyricsStore('lyrics', () => {
       // weird bug with solid-js
       return JSON.parse(JSON.stringify(cache.data)) as typeof cache.data;
@@ -103,7 +103,7 @@ export const fetchLyrics = (info: SongInfo) => {
           pCache.state = 'done';
           pCache.data = res;
 
-          if (getSongInfo().videoId === info.videoId) {
+          if (getVideoInfo().videoId === info.videoId) {
             setLyricsStore('lyrics', (old) => {
               return {
                 ...old,
@@ -122,7 +122,7 @@ export const fetchLyrics = (info: SongInfo) => {
 
           console.error(error);
 
-          if (getSongInfo().videoId === info.videoId) {
+          if (getVideoInfo().videoId === info.videoId) {
             setLyricsStore('lyrics', (old) => {
               return {
                 ...old,
@@ -140,7 +140,7 @@ export const fetchLyrics = (info: SongInfo) => {
   });
 };
 
-export const retrySearch = (provider: ProviderName, info: SongInfo) => {
+export const retrySearch = (provider: ProviderName, info: VideoInfo) => {
   setLyricsStore('lyrics', (old) => {
     const pCache = {
       state: 'fetching',

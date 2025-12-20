@@ -3,7 +3,7 @@ import { type serve } from '@hono/node-server';
 
 import type { RepeatMode, VolumeState } from '@/types/datahost-get-state';
 import type { BackendContext } from '@/types/contexts';
-import type { SongInfo } from '@/providers/song-info';
+import type { VideoInfo } from '@/providers/video-info';
 import type { APIServerConfig } from '../config';
 
 export type HonoApp = Hono;
@@ -11,7 +11,7 @@ export type BackendType = {
   app?: HonoApp;
   server?: ReturnType<typeof serve>;
   oldConfig?: APIServerConfig;
-  songInfo?: SongInfo;
+  videoInfo?: VideoInfo;
   currentRepeatMode?: RepeatMode;
   volumeState?: VolumeState;
   injectWebSocket?: (server: ReturnType<typeof serve>) => void;

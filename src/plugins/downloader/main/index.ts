@@ -23,14 +23,12 @@ import {
   sendFeedback as sendFeedback_,
   setBadge,
 } from './utils';
-import {
-  registerCallback,
+import registerCallback, {
   cleanupName,
   getImage,
-  MediaType,
-  type SongInfo,
-  SongInfoEvent,
-} from '@/providers/song-info';
+  type VideoInfo as ProviderVideoInfo,
+  VideoInfoEvent,
+} from '@/providers/video-info';
 import { getNetFetchAsFetch } from '@/plugins/utils/main';
 import { t } from '@/i18n';
 
@@ -40,28 +38,33 @@ import type { DownloaderPluginConfig } from '../index';
 import type { BackendContext } from '@/types/contexts';
 import type { GetPlayerResponse } from '@/types/get-player-response';
 import type { FormatOptions } from 'node_modules/\u0079\u006f\u0075\u0074\u0075\u0062\u0065i.js/dist/src/types';
-import type { VideoInfo } from 'node_modules/\u0079\u006f\u0075\u0074\u0075\u0062\u0065i.js/dist/src/parser/\u0079\u006f\u0075\u0074\u0075\u0062\u0065';
+import type { VideoInfo as YTVideoInfo } from 'node_modules/\u0079\u006f\u0075\u0074\u0075\u0062\u0065i.js/dist/src/parser/\u0079\u006f\u0075\u0074\u0075\u0062\u0065';
 import type { PlayerErrorMessage } from 'node_modules/\u0079\u006f\u0075\u0074\u0075\u0062\u0065i.js/dist/src/parser/nodes';
-import type {
-  TrackInfo,
-  Playlist,
-} from 'node_modules/\u0079\u006f\u0075\u0074\u0075\u0062\u0065i.js/dist/src/parser/ytmusic';
 
-type CustomSongInfo = SongInfo & { trackId?: string };
+
+interface CustomVideoInfo {
+  videoId: string;
+  title: string;
+  author: string;
+  imageSrc?: string;
+  views?: number;
+  videoDuration?: number;
+  trackId?: string;
+}
 
 const ffmpeg = lazy(async () =>
   (await import('@ffmpeg.wasm/main')).createFFmpeg({
     log: false,
-    logger() {}, // Console.log,
-    progress() {}, // Console.log,
+    logger() { }, // Console.log,
+    progress() { }, // Console.log,
   }),
 );
 const ffmpegMutex = new Mutex();
 
-Platform.shim.eval = async (data: Types.BuildScriptResult, env: Record<string, Types.VMPrimative>) => {
+Platform.shim.eval = async (data: any, env: Record<string, any>) => {
   const properties = [];
 
-  if(env.n) {
+  if (env.n) {
     properties.push(`n: exportedVars.nFunction("${env.n}")`)
   }
 
@@ -109,9 +112,9 @@ const sendError = (error: Error, source?: string) => {
   const songNameMessage = source ? `\nin ${source}` : '';
   const cause = error.cause
     ? `\n\n${
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string,@typescript-eslint/restrict-template-expressions
-        error.cause instanceof Error ? error.cause.toString() : error.cause
-      }`
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string,@typescript-eslint/restrict-template-expressions
+    error.cause instanceof Error ? error.cause.toString() : error.cause
+    }`
     : '';
   const message = `${error.toString()}${songNameMessage}${cause}`;
 
@@ -213,8 +216,8 @@ export const onMainLoad = async ({
   }
 
   ipc.handle('download-song', (url: string) => downloadSong(url));
-  ipc.on('peard:video-src-changed', (data: GetPlayerResponse) => {
-    playingUrl = data.microformat.microformatDataRenderer.urlCanonical;
+  ipc.on('ytd:video-src-changed', (data: GetPlayerResponse) => {
+    playingUrl = (data.microformat as any).microformatDataRenderer.urlCanonical;
   });
   ipc.handle('download-playlist-request', async (url: string) =>
     downloadPlaylist(url),
@@ -231,7 +234,7 @@ export async function downloadSong(
   url: string,
   playlistFolder: string | undefined = undefined,
   trackId: string | undefined = undefined,
-  increasePlaylistProgress: (value: number) => void = () => {},
+  increasePlaylistProgress: (value: number) => void = () => { },
 ) {
   let resolvedName;
   try {
@@ -252,7 +255,7 @@ export async function downloadSongFromId(
   id: string,
   playlistFolder: string | undefined = undefined,
   trackId: string | undefined = undefined,
-  increasePlaylistProgress: (value: number) => void = () => {},
+  increasePlaylistProgress: (value: number) => void = () => { },
 ) {
   let resolvedName;
   try {
@@ -278,15 +281,15 @@ function downloadSongOnFinishSetup({
 
   const defaultDownloadFolder = app.getPath('downloads');
 
-  registerCallback((songInfo: SongInfo, event) => {
-    if (event === SongInfoEvent.TimeChanged) {
-      const elapsedSeconds = songInfo.elapsedSeconds ?? 0;
+  registerCallback((videoInfo: ProviderVideoInfo, event) => {
+    if (event === VideoInfoEvent.TimeChanged) {
+      const elapsedSeconds = videoInfo.elapsedSeconds ?? 0;
       if (elapsedSeconds > time) time = elapsedSeconds;
       return;
     }
     if (
-      !songInfo.isPaused &&
-      songInfo.url !== currentUrl &&
+      !videoInfo.isPaused &&
+      videoInfo.url !== currentUrl &&
       config.downloadOnFinish?.enabled
     ) {
       if (typeof currentUrl === 'string' && duration && duration > 0) {
@@ -297,8 +300,8 @@ function downloadSongOnFinishSetup({
           downloadSong(
             currentUrl,
             config.downloadOnFinish.folder ??
-              config.downloadFolder ??
-              defaultDownloadFolder,
+            config.downloadFolder ??
+            defaultDownloadFolder,
           );
         } else if (
           config.downloadOnFinish.mode === 'percent' &&
@@ -307,20 +310,20 @@ function downloadSongOnFinishSetup({
           downloadSong(
             currentUrl,
             config.downloadOnFinish.folder ??
-              config.downloadFolder ??
-              defaultDownloadFolder,
+            config.downloadFolder ??
+            defaultDownloadFolder,
           );
         }
       }
 
-      currentUrl = songInfo.url;
-      duration = songInfo.songDuration;
+      currentUrl = videoInfo.url;
+      duration = videoInfo.songDuration;
       time = 0;
     }
   });
 
-  ipcMain.on('peard:player-api-loaded', () => {
-    ipc.send('peard:setup-time-changed-listener');
+  ipcMain.on('ytd:player-api-loaded', () => {
+    ipc.send('ytd:setup-time-changed-listener');
   });
 }
 
@@ -330,7 +333,7 @@ async function downloadSongUnsafe(
   setName: (name: string) => void,
   playlistFolder: string | undefined = undefined,
   trackId: string | undefined = undefined,
-  increasePlaylistProgress: (value: number) => void = () => {},
+  increasePlaylistProgress: (value: number) => void = () => { },
 ) {
   const sendFeedback = (message: unknown, progress?: number) => {
     if (!playlistFolder) {
@@ -354,7 +357,31 @@ async function downloadSongUnsafe(
       );
   }
 
-  let info: TrackInfo | VideoInfo = await yt.music.getInfo(id);
+  // Detect if we're dealing with YouTube Music or regular YouTube
+  const isYouTubeMusic = !isId && (idOrUrl.includes('music.youtube.com') ||
+    idOrUrl.includes('ytmusic://'));
+
+  // Use appropriate API based on platform
+  let info: any;
+  try {
+    if (isYouTubeMusic) {
+      info = await yt.music.getInfo(id);
+    } else {
+      // For regular YouTube videos, use the standard getInfo method
+      info = await yt.getInfo(id);
+    }
+  } catch (error) {
+    // If YouTube Music fails, try regular YouTube as fallback
+    if (isYouTubeMusic) {
+      try {
+        info = await yt.getInfo(id);
+      } catch (fallbackError) {
+        throw error; // Throw original error
+      }
+    } else {
+      throw error;
+    }
+  }
 
   if (!info) {
     throw new Error(
@@ -362,21 +389,20 @@ async function downloadSongUnsafe(
     );
   }
 
-  const metadata = getMetadata(info);
-  if (metadata.album === 'N/A') {
-    metadata.album = '';
-  }
+  const metadata = getUnifiedMetadata(info);
+  // if (metadata.album === 'N/A') { // no wtf
+  //   metadata.album = '';
+  // }
 
   metadata.trackId = trackId;
 
   const dir =
     playlistFolder || config.downloadFolder || app.getPath('downloads');
-  const name = `${metadata.artist ? `${metadata.artist} - ` : ''}${
-    metadata.title
-  }`;
+  const name = `${metadata.author ? `${metadata.author} - ` : ''}${metadata.title
+    }`;
   setName(name);
 
-  let playabilityStatus = info.playability_status;
+  let playabilityStatus = (info as any).playability_status;
   let bypassedResult = null;
   if (playabilityStatus?.status === 'LOGIN_REQUIRED') {
     // Try to bypass the age restriction
@@ -416,7 +442,7 @@ async function downloadSongUnsafe(
     format: 'any', // Media container format
   };
 
-  const format = info.chooseFormat(downloadOptions);
+  const format = (info as any).chooseFormat(downloadOptions);
 
   let targetFileExtension: string;
   if (!presetSetting?.extension) {
@@ -441,11 +467,11 @@ async function downloadSongUnsafe(
     return;
   }
 
-  const stream = await info.download(downloadOptions);
+  const stream = await (info as any).download(downloadOptions);
 
   console.info(
     t('plugins.downloader.backend.feedback.download-info', {
-      artist: metadata.artist,
+      artist: metadata.author,
       title: metadata.title,
       videoId: metadata.videoId,
     }),
@@ -491,7 +517,7 @@ async function downloadChunks(
   stream: AsyncGenerator<Uint8Array, void>,
   contentLength: number,
   sendFeedback: (str: string, value?: number) => void,
-  increasePlaylistProgress: (value: number) => void = () => {},
+  increasePlaylistProgress: (value: number) => void = () => { },
 ) {
   const chunks = [];
   let downloaded = 0;
@@ -516,11 +542,11 @@ async function downloadChunks(
 async function iterableStreamToProcessedUint8Array(
   stream: AsyncGenerator<Uint8Array, void>,
   extension: string,
-  metadata: CustomSongInfo,
+  metadata: CustomVideoInfo,
   presetFfmpegArgs: string[],
   contentLength: number,
   sendFeedback: (str: string, value?: number) => void,
-  increasePlaylistProgress: (value: number) => void = () => {},
+  increasePlaylistProgress: (value: number) => void = () => { },
 ): Promise<Uint8Array | null> {
   sendFeedback(t('plugins.downloader.backend.feedback.loading'), 2); // Indefinite progress bar after download
 
@@ -593,7 +619,7 @@ const getCoverBuffer = async (url: string) => {
 
 async function writeID3(
   buffer: Buffer,
-  metadata: CustomSongInfo,
+  metadata: CustomVideoInfo,
   sendFeedback: (str: string, value?: number) => void,
 ) {
   try {
@@ -602,11 +628,11 @@ async function writeID3(
 
     // Create the metadata tags
     tags.title = metadata.title;
-    tags.artist = metadata.artist;
+    tags.artist = metadata.author;
 
-    if (metadata.album) {
-      tags.album = metadata.album;
-    }
+    // if (metadata.album) { // no wtf
+    //   tags.album = metadata.album;
+    // }
 
     const coverBuffer = await getCoverBuffer(metadata.imageSrc ?? '');
     if (coverBuffer) {
@@ -626,7 +652,7 @@ async function writeID3(
 
     return NodeID3.write(tags, buffer);
   } catch (error: unknown) {
-    sendError(error as Error, `${metadata.artist} - ${metadata.title}`);
+    sendError(error as Error, `${metadata.author} - ${metadata.title}`);
     return null;
   }
 }
@@ -637,6 +663,10 @@ export async function downloadPlaylist(givenUrl?: string | URL) {
   } catch {
     givenUrl = new URL(win.webContents.getURL());
   }
+
+  // Detect if we're dealing with YouTube Music or regular YouTube
+  const isYouTubeMusic = givenUrl.hostname === 'music.youtube.com' ||
+    givenUrl.href.includes('music.youtube.com');
 
   const playlistId =
     getPlaylistID(givenUrl) || getPlaylistID(new URL(playingUrl));
@@ -656,17 +686,27 @@ export async function downloadPlaylist(givenUrl?: string | URL) {
     }),
   );
   sendFeedback(t('plugins.downloader.backend.feedback.getting-playlist-info'));
-  let playlist: Playlist;
-  const items: YTNodes.MusicResponsiveListItem[] = [];
-  try {
-    playlist = await yt.music.getPlaylist(playlistId);
-    if (playlist?.items) {
-      const filteredItems = playlist.items.filter(
-        (item): item is YTNodes.MusicResponsiveListItem =>
-          item instanceof YTNodes.MusicResponsiveListItem,
-      );
 
-      items.push(...filteredItems);
+  let playlist: any; // Use any to handle both YouTube and YouTube Music playlists
+  const items: any[] = [];
+
+  try {
+    if (isYouTubeMusic) {
+      // Use YouTube Music API
+      playlist = await yt.music.getPlaylist(playlistId);
+      if (playlist?.items) {
+        const filteredItems = playlist.items.filter(
+          (item: any): item is YTNodes.MusicResponsiveListItem =>
+            item instanceof YTNodes.MusicResponsiveListItem,
+        );
+        items.push(...filteredItems);
+      }
+    } else {
+      // Use regular YouTube API
+      playlist = await yt.getPlaylist(playlistId);
+      if (playlist?.items) {
+        items.push(...playlist.items);
+      }
     }
   } catch (error: unknown) {
     sendError(
@@ -699,11 +739,11 @@ export async function downloadPlaylist(givenUrl?: string | URL) {
     'NO_TITLE';
   const isAlbum = !normalPlaylistTitle;
 
-  while (playlist.has_continuation) {
+  while (playlist.has_continuation && isYouTubeMusic) {
     playlist = await playlist.getContinuation();
 
     const filteredItems = playlist.items.filter(
-      (item): item is YTNodes.MusicResponsiveListItem =>
+      (item: any): item is YTNodes.MusicResponsiveListItem =>
         item instanceof YTNodes.MusicResponsiveListItem,
     );
 
@@ -793,22 +833,42 @@ export async function downloadPlaylist(givenUrl?: string | URL) {
         }),
       );
       const trackId = isAlbum ? counter : undefined;
+
+      // Get the video ID based on the platform
+      let videoId: string;
+      if (isYouTubeMusic) {
+        videoId = song.id!;
+      } else {
+        // Regular YouTube playlist item
+        videoId = song.id || song.video_id || (song.endpoint?.payload?.videoId);
+      }
+
+      if (!videoId) {
+        console.warn('Could not find video ID for playlist item:', song);
+        counter++;
+        continue;
+      }
+
       await downloadSongFromId(
-        song.id!,
+        videoId,
         playlistFolder,
         trackId?.toString(),
         increaseProgress,
-      ).catch((error) =>
+      ).catch((error) => {
+        // Get title and author safely
+        const title = song.title?.text || song.title || 'Unknown Title';
+        const author = song.author?.name || song.author || 'Unknown Author';
+
         sendError(
           new Error(
             t('plugins.downloader.backend.feedback.error-while-downloading', {
-              author: song.author!.name,
-              title: song.title!,
+              author,
+              title,
               error: String(error),
             }),
           ),
-        ),
-      );
+        );
+      });
 
       win.setProgressBar(counter / items.length);
       setBadge(items.length - counter);
@@ -823,15 +883,15 @@ export async function downloadPlaylist(givenUrl?: string | URL) {
   }
 }
 
-function getFFmpegMetadataArgs(metadata: CustomSongInfo) {
+function getFFmpegMetadataArgs(metadata: CustomVideoInfo) {
   if (!metadata) {
     return [];
   }
 
   return [
     ...(metadata.title ? ['-metadata', `title=${metadata.title}`] : []),
-    ...(metadata.artist ? ['-metadata', `artist=${metadata.artist}`] : []),
-    ...(metadata.album ? ['-metadata', `album=${metadata.album}`] : []),
+    ...(metadata.author ? ['-metadata', `artist=${metadata.author}`] : []),
+    // ...(metadata.album ? ['-metadata', `album=${metadata.album}`] : []), // no wtf
     ...(metadata.trackId ? ['-metadata', `track=${metadata.trackId}`] : []),
   ];
 }
@@ -853,22 +913,51 @@ const getVideoId = (url: URL | string): string | null => {
   return new URL(url).searchParams.get('v');
 };
 
-const getMetadata = (info: TrackInfo): CustomSongInfo => ({
-  videoId: info.basic_info.id!,
-  title: cleanupName(info.basic_info.title!),
-  artist: cleanupName(info.basic_info.author!),
-  album: info.player_overlays?.browser_media_session?.as(
-    YTNodes.BrowserMediaSession,
-  ).album?.text,
-  imageSrc: info.basic_info.thumbnail?.find((t) => !t.url.endsWith('.webp'))
-    ?.url,
-  views: info.basic_info.view_count!,
-  songDuration: info.basic_info.duration!,
-  mediaType: MediaType.Audio,
-});
+const getUnifiedMetadata = (info: any): CustomVideoInfo => {
+  const basicInfo = (info as any).basic_info;
+
+  // Handle different property names between TrackInfo and VideoInfo
+  let author: string;
+  let views: number;
+  let duration: number;
+  let thumbnail: any;
+
+  if ('author' in basicInfo && basicInfo.author) {
+    // TrackInfo
+    author = cleanupName(basicInfo.author);
+    views = basicInfo.view_count || 0;
+    duration = basicInfo.duration || 0;
+    thumbnail = basicInfo.thumbnail;
+  } else if ('channel' in basicInfo && basicInfo.channel) {
+    // VideoInfo
+    author = cleanupName(basicInfo.channel.name || '');
+    views = typeof basicInfo.view_count === 'string'
+      ? parseInt(basicInfo.view_count) || 0
+      : basicInfo.view_count || 0;
+    duration = typeof basicInfo.duration === 'number'
+      ? basicInfo.duration
+      : parseInt(String(basicInfo.duration)) || 0;
+    thumbnail = basicInfo.thumbnail;
+  } else {
+    // Fallback
+    author = 'Unknown';
+    views = 0;
+    duration = 0;
+    thumbnail = null;
+  }
+
+  return {
+    videoId: basicInfo.id!,
+    title: cleanupName(basicInfo.title!),
+    author,
+    imageSrc: thumbnail?.find((t: any) => !t.url.endsWith('.webp'))?.url,
+    views,
+    videoDuration: duration,
+  };
+};
 
 // This is used to bypass age restrictions
-const getAndroidTvInfo = async (id: string): Promise<VideoInfo> => {
+const getAndroidTvInfo = async (id: string): Promise<YTVideoInfo> => {
   // GetInfo 404s with the bypass, so we use getBasicInfo instead
   // that's fine as we only need the streaming data
   return await yt.getBasicInfo(id, {

@@ -1,7 +1,7 @@
 import { net } from 'electron';
 
 import { createPlugin } from '@/utils';
-import { registerCallback } from '@/providers/song-info';
+import registerCallback from '@/providers/video-info';
 import { t } from '@/i18n';
 
 type LumiaData = {
@@ -58,42 +58,41 @@ export default createPlugin({
         })
         .catch((error: { code: number; errno: number }) => {
           console.log(
-            `Error: '${
-              error.code || error.errno
+            `Error: '${error.code || error.errno
             }' - when trying to access lumiastream webserver at port ${port}`,
           );
         });
     };
 
-    ipc.on('peard:player-api-loaded', () =>
-      ipc.send('peard:setup-time-changed-listener'),
+    ipc.on('ytd:player-api-loaded', () =>
+      ipc.send('ytd:setup-time-changed-listener'),
     );
 
-    registerCallback((songInfo) => {
-      if (!songInfo.title && !songInfo.artist) {
+    registerCallback((videoInfo) => {
+      if (!videoInfo.title && !videoInfo.artist) {
         return;
       }
 
       if (previousStatePaused === null) {
         data.eventType = 'switchSong';
-      } else if (previousStatePaused !== songInfo.isPaused) {
+      } else if (previousStatePaused !== videoInfo.isPaused) {
         data.eventType = 'playPause';
       }
 
-      data.duration = secToMilisec(songInfo.songDuration);
-      data.progress = secToMilisec(songInfo.elapsedSeconds);
-      data.url = songInfo.url;
-      data.videoId = songInfo.videoId;
-      data.playlistId = songInfo.playlistId;
-      data.cover = songInfo.imageSrc;
-      data.cover_url = songInfo.imageSrc;
-      data.album_url = songInfo.imageSrc;
-      data.title = songInfo.title;
-      data.artists = [songInfo.artist];
-      data.status = songInfo.isPaused ? 'stopped' : 'playing';
-      data.isPaused = songInfo.isPaused;
-      data.album = songInfo.album;
-      data.views = songInfo.views;
+      data.duration = secToMilisec(videoInfo.songDuration);
+      data.progress = secToMilisec(videoInfo.elapsedSeconds);
+      data.url = videoInfo.url;
+      data.videoId = videoInfo.videoId;
+      data.playlistId = videoInfo.playlistId;
+      data.cover = videoInfo.imageSrc;
+      data.cover_url = videoInfo.imageSrc;
+      data.album_url = videoInfo.imageSrc;
+      data.title = videoInfo.title;
+      data.artists = [videoInfo.artist];
+      data.status = videoInfo.isPaused ? 'stopped' : 'playing';
+      data.isPaused = videoInfo.isPaused;
+      data.album = videoInfo.album;
+      data.views = videoInfo.views;
       post(data);
     });
   },

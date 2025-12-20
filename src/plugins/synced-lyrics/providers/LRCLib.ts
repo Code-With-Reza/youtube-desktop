@@ -3,7 +3,7 @@ import { jaroWinkler } from '@skyra/jaro-winkler';
 import { config } from '../renderer/renderer';
 import { LRC } from '../parsers/lrc';
 
-import type { LyricProvider, LyricResult, SearchSongInfo } from '../types';
+import type { LyricProvider, LyricResult, SearchVideoInfo } from '../types';
 
 export class LRCLib implements LyricProvider {
   name = 'LRCLib';
@@ -16,7 +16,7 @@ export class LRCLib implements LyricProvider {
     album,
     songDuration,
     tags,
-  }: SearchSongInfo): Promise<LyricResult | null> {
+  }: SearchVideoInfo): Promise<LyricResult | null> {
     let query = new URLSearchParams({
       artist_name: artist,
       track_name: title,
@@ -165,10 +165,17 @@ export class LRCLib implements LyricProvider {
       title: closestResult.trackName,
       artists: closestResult.artistName.split(/[&,]/g),
       lines: raw
-        ? LRC.parse(raw).lines.map((l) => ({
-            ...l,
+        ? LRC.parse(raw).lines.map((l, i, arr) => {
+          const nextLine = arr[i + 1];
+          const timeInMs = l.start * 1000;
+          return {
+            text: l.text,
+            timeInMs,
+            time: `${Math.floor(l.start / 60).toString().padStart(2, '0')}:${Math.floor(l.start % 60).toString().padStart(2, '0')}.${Math.floor((l.start % 1) * 100).toString().padStart(2, '0')}`,
+            duration: nextLine ? (nextLine.start - l.start) * 1000 : 0,
             status: 'upcoming' as const,
-          }))
+          };
+        })
         : undefined,
       lyrics: plain,
     };

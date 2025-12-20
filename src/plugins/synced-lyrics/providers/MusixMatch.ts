@@ -3,7 +3,7 @@ import * as z from 'zod';
 import { LRC } from '../parsers/lrc';
 import { netFetch } from '../renderer';
 
-import type { LyricProvider, LyricResult, SearchSongInfo } from '../types';
+import type { LyricProvider, LyricResult, SearchVideoInfo } from '../types';
 
 export class MusixMatch implements LyricProvider {
   name = 'MusixMatch';
@@ -11,7 +11,7 @@ export class MusixMatch implements LyricProvider {
 
   private api: MusixMatchAPI | undefined;
 
-  async search(info: SearchSongInfo): Promise<LyricResult | null> {
+  async search(info: SearchVideoInfo): Promise<LyricResult | null> {
     // late-init the API, to avoid an electron IPC issue
     // an added benefit is that if it has an error during init, the user can hit the retry button
     this.api ??= await MusixMatchAPI.new();
@@ -42,10 +42,17 @@ export class MusixMatch implements LyricProvider {
       title: track.track_name,
       artists: [track.artist_name],
       lines: subtitle
-        ? LRC.parse(subtitle.subtitle.subtitle_body).lines.map((l) => ({
-            ...l,
+        ? LRC.parse(subtitle.subtitle.subtitle_body).lines.map((l, i, arr) => {
+          const nextLine = arr[i + 1];
+          const timeInMs = l.start * 1000;
+          return {
+            text: l.text,
+            timeInMs,
+            time: `${Math.floor(l.start / 60).toString().padStart(2, '0')}:${Math.floor(l.start % 60).toString().padStart(2, '0')}.${Math.floor((l.start % 1) * 100).toString().padStart(2, '0')}`,
+            duration: nextLine ? (nextLine.start - l.start) * 1000 : 0,
             status: 'upcoming' as const,
-          }))
+          };
+        })
         : undefined,
       lyrics: lyrics,
     };
@@ -186,8 +193,8 @@ class MusixMatchAPI {
     R = {
       header: { status_code: number };
       body: T extends keyof typeof ResponseSchema
-        ? z.infer<(typeof ResponseSchema)[T]>
-        : unknown;
+      ? z.infer<(typeof ResponseSchema)[T]>
+      : unknown;
     },
   >(endpoint: T, params: Params[T]): Promise<R> {
     await this.initPromise;

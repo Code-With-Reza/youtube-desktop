@@ -86,7 +86,7 @@ export default createPlugin({
         '#nav-bar-background',
       );
       this.ytmusicPlayerBar =
-        document.querySelector<HTMLElement>('ytmusic-player-bar');
+        document.querySelector<HTMLElement>('ytyoutube-player-bar');
       this.playerBarBackground = document.querySelector<HTMLElement>(
         '#player-bar-background',
       );

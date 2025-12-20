@@ -160,7 +160,7 @@ export default defineConfig({
       server: {
         cors: {
           origin:
-            'https://music.\u0079\u006f\u0075\u0074\u0075\u0062\u0065.com',
+            'https://www.youtube.com',
         },
       },
     };

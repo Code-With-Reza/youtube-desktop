@@ -128,10 +128,10 @@ export default createPlugin({
       switch (config.mode) {
         case 'native': {
           document
-            .querySelector('ytmusic-player-page')
+            .querySelector('ytyoutube-player-page')
             ?.setAttribute('has-av-switcher', '');
           document
-            .querySelector('ytmusic-player')
+            .querySelector('ytyoutube-player')
             ?.setAttribute('has-av-switcher', '');
           document
             .querySelector('ytmusic-av-toggle')
@@ -141,10 +141,10 @@ export default createPlugin({
 
         case 'disabled': {
           document
-            .querySelector('ytmusic-player-page')
+            .querySelector('ytyoutube-player-page')
             ?.removeAttribute('has-av-switcher');
           document
-            .querySelector('ytmusic-player')
+            .querySelector('ytyoutube-player')
             ?.removeAttribute('has-av-switcher');
           document
             .querySelector('ytmusic-av-toggle')
@@ -167,7 +167,7 @@ export default createPlugin({
 
       const player = document.querySelector<
         HTMLElement & { videoMode_: boolean }
-      >('ytmusic-player');
+      >('ytyoutube-player');
       const video = document.querySelector<HTMLVideoElement>('video');
 
       const switchButtonContainer = document.createElement('div');
@@ -219,7 +219,7 @@ export default createPlugin({
           );
 
           document.querySelector<HTMLElement>(
-            '#song-video.ytmusic-player',
+            '#song-video.ytyoutube-player',
           )!.style.display = showVideo ? 'block' : 'none';
           document.querySelector<HTMLElement>('#song-image')!.style.display =
             showVideo ? 'none' : 'block';
@@ -257,7 +257,7 @@ export default createPlugin({
           // Change display to video mode if video exist & video is hidden & option.hideVideo = false
           if (
             !this.config?.hideVideo &&
-            document.querySelector<HTMLElement>('#song-video.ytmusic-player')
+            document.querySelector<HTMLElement>('#song-video.ytyoutube-player')
               ?.style.display === 'none'
           ) {
             setVideoState(true);
@@ -325,7 +325,7 @@ export default createPlugin({
           if (video) {
             video.style.height = 'auto';
           }
-          video?.addEventListener('peard:src-changed', videoStarted);
+          video?.addEventListener('ytd:src-changed', videoStarted);
           observeThumbnail();
           videoStarted();
           switch (config.align) {

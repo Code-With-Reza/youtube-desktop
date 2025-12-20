@@ -3,7 +3,7 @@ import { net } from 'electron';
 import is from 'electron-is';
 
 import { createPlugin } from '@/utils';
-import { registerCallback } from '@/providers/song-info';
+import registerCallback from '@/providers/video-info';
 import { t } from '@/i18n';
 
 interface Data {
@@ -62,8 +62,7 @@ export default createPlugin({
             if (!this.liteMode) {
               if (is.dev()) {
                 console.debug(
-                  `Error: '${
-                    error.code || error.errno
+                  `Error: '${error.code || error.errno
                   }' - when trying to access obs-tuna webserver at port ${port}. enable lite mode`,
                 );
               }
@@ -72,28 +71,28 @@ export default createPlugin({
           });
       };
 
-      ipc.on('peard:player-api-loaded', () =>
-        ipc.send('peard:setup-time-changed-listener'),
+      ipc.on('ytd:player-api-loaded', () =>
+        ipc.send('ytd:setup-time-changed-listener'),
       );
 
-      registerCallback((songInfo) => {
-        if (!songInfo.title && !songInfo.artist) {
+      registerCallback((videoInfo) => {
+        if (!videoInfo.title && !videoInfo.artist) {
           return;
         }
 
         post({
-          duration: secToMilisec(songInfo.songDuration),
-          progress: secToMilisec(songInfo.elapsedSeconds ?? 0),
-          cover: songInfo.imageSrc ?? '',
-          cover_url: songInfo.imageSrc ?? '',
-          album_url: songInfo.imageSrc ?? '',
-          title: songInfo.title,
-          alternativeTitle: songInfo.alternativeTitle ?? '',
-          artists: [songInfo.artist],
-          status: songInfo.isPaused ? 'stopped' : 'playing',
-          album: songInfo.album,
-          url: songInfo.url ?? '',
-          tags: songInfo.tags ?? [],
+          duration: secToMilisec(videoInfo.songDuration),
+          progress: secToMilisec(videoInfo.elapsedSeconds ?? 0),
+          cover: videoInfo.imageSrc ?? '',
+          cover_url: videoInfo.imageSrc ?? '',
+          album_url: videoInfo.imageSrc ?? '',
+          title: videoInfo.title,
+          alternativeTitle: videoInfo.alternativeTitle ?? '',
+          artists: [videoInfo.artist],
+          status: videoInfo.isPaused ? 'stopped' : 'playing',
+          album: videoInfo.album,
+          url: videoInfo.url ?? '',
+          tags: videoInfo.tags ?? [],
         });
       });
     },

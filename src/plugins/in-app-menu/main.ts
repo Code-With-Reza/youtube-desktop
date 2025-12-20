@@ -16,6 +16,7 @@ export const onMainLoad = ({
   window: win,
   ipc: { handle, send },
 }: BackendContext<InAppMenuConfig>) => {
+  console.log('onMainLoad');
   win.on('close', () => {
     send('close-all-in-app-menu-panel');
   });
@@ -54,7 +55,7 @@ export const onMainLoad = ({
     return target;
   };
 
-  ipcMain.handle('peard:menu-event', (event, commandId: number) => {
+  ipcMain.handle('ytd:menu-event', (event, commandId: number) => {
     const target = getMenuItemById(commandId);
     if (target)
       (

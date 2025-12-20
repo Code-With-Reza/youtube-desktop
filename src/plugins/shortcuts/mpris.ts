@@ -14,19 +14,18 @@ import MprisPlayer, {
   type Track,
 } from '@jellybrick/mpris-service';
 
-import {
-  registerCallback,
-  type SongInfo,
-  SongInfoEvent,
-} from '@/providers/song-info';
-import { getSongControls } from '@/providers/song-controls';
+import registerCallback, {
+  type VideoInfo,
+  VideoInfoEvent,
+} from '@/providers/video-info';
+import { getVideoControls } from '@/providers/video-controls';
 import * as config from '@/config';
 import { LoggerPrefix } from '@/utils';
 
 import { APPLICATION_NAME } from '@/i18n';
 
 import type { RepeatMode, VolumeState } from '@/types/datahost-get-state';
-import type { QueueResponse } from '@/types/music-player-desktop-internal';
+import type { QueueResponse } from '@/types/youtube-desktop-internal';
 
 class YTPlayer extends MprisPlayer {
   /**
@@ -88,7 +87,7 @@ function setupMPRIS() {
 }
 
 export function registerMPRIS(win: BrowserWindow) {
-  const songControls = getSongControls(win);
+  const videoControls = getVideoControls(win);
   const {
     playPause,
     next,
@@ -100,9 +99,9 @@ export function registerMPRIS(win: BrowserWindow) {
     requestShuffleInformation,
     requestFullscreenInformation,
     requestQueueInformation,
-  } = songControls;
+  } = videoControls;
   try {
-    let currentSongInfo: SongInfo | null = null;
+    let currentVideoInfo: VideoInfo | null = null;
     const secToMicro = (n: number) => Math.round(Number(n) * 1e6);
     const microToSec = (n: number) => Math.round(Number(n) / 1e6);
 
@@ -114,37 +113,37 @@ export function registerMPRIS(win: BrowserWindow) {
 
     const seekTo = (event: Position) => {
       if (
-        currentSongInfo?.videoId &&
-        event.trackId.endsWith(correctId(currentSongInfo.videoId))
+        currentVideoInfo?.videoId &&
+        event.trackId.endsWith(correctId(currentVideoInfo.videoId))
       ) {
-        win.webContents.send('peard:seek-to', microToSec(event.position ?? 0));
+        win.webContents.send('ytd:seek-to', microToSec(event.position ?? 0));
         player.setPosition(event.position ?? 0);
       }
     };
     const seekBy = (offset: number) => {
-      win.webContents.send('peard:seek-by', microToSec(offset));
+      win.webContents.send('ytd:seek-by', microToSec(offset));
       player.setPosition(player.getPosition() + offset);
     };
 
-    ipcMain.on('peard:player-api-loaded', () => {
-      win.webContents.send('peard:setup-seeked-listener', 'mpris');
-      win.webContents.send('peard:setup-time-changed-listener', 'mpris');
-      win.webContents.send('peard:setup-repeat-changed-listener', 'mpris');
-      win.webContents.send('peard:setup-volume-changed-listener', 'mpris');
-      win.webContents.send('peard:setup-shuffle-changed-listener', 'mpris');
-      win.webContents.send('peard:setup-fullscreen-changed-listener', 'mpris');
-      win.webContents.send('peard:setup-autoplay-changed-listener', 'mpris');
+    ipcMain.on('ytd:player-api-loaded', () => {
+      win.webContents.send('ytd:setup-seeked-listener', 'mpris');
+      win.webContents.send('ytd:setup-time-changed-listener', 'mpris');
+      win.webContents.send('ytd:setup-repeat-changed-listener', 'mpris');
+      win.webContents.send('ytd:setup-volume-changed-listener', 'mpris');
+      win.webContents.send('ytd:setup-shuffle-changed-listener', 'mpris');
+      win.webContents.send('ytd:setup-fullscreen-changed-listener', 'mpris');
+      win.webContents.send('ytd:setup-autoplay-changed-listener', 'mpris');
       requestShuffleInformation();
       requestFullscreenInformation();
       requestQueueInformation();
     });
 
-    ipcMain.on('peard:seeked', (_, t: number) => {
+    ipcMain.on('ytd:seeked', (_, t: number) => {
       player.setPosition(secToMicro(t));
       player.seeked(secToMicro(t));
     });
 
-    ipcMain.on('peard:repeat-changed', (_, mode: RepeatMode) => {
+    ipcMain.on('ytd:repeat-changed', (_, mode: RepeatMode) => {
       switch (mode) {
         case 'NONE': {
           player.setLoopStatus(LOOP_STATUS_NONE);
@@ -163,7 +162,7 @@ export function registerMPRIS(win: BrowserWindow) {
       requestQueueInformation();
     });
 
-    ipcMain.on('peard:shuffle-changed', (_, shuffleEnabled: boolean) => {
+    ipcMain.on('ytd:shuffle-changed', (_, shuffleEnabled: boolean) => {
       if (player.shuffle === undefined || !player.canUsePlayerControls) {
         return;
       }
@@ -171,7 +170,7 @@ export function registerMPRIS(win: BrowserWindow) {
       player.shuffle = shuffleEnabled ?? !player.shuffle;
     });
 
-    ipcMain.on('peard:fullscreen-changed', (_, changedTo: boolean) => {
+    ipcMain.on('ytd:fullscreen-changed', (_, changedTo: boolean) => {
       if (player.fullscreen === undefined || !player.canUsePlayerControls) {
         return;
       }
@@ -181,7 +180,7 @@ export function registerMPRIS(win: BrowserWindow) {
     });
 
     ipcMain.on(
-      'peard:set-fullscreen',
+      'ytd:set-fullscreen',
       (_, isFullscreen: boolean | undefined) => {
         if (!player.canUsePlayerControls || isFullscreen === undefined) {
           return;
@@ -192,16 +191,16 @@ export function registerMPRIS(win: BrowserWindow) {
     );
 
     ipcMain.on(
-      'peard:fullscreen-changed-supported',
+      'ytd:fullscreen-changed-supported',
       (_, isFullscreenSupported: boolean) => {
         player.canUsePlayerControls = isFullscreenSupported;
       },
     );
-    ipcMain.on('peard:autoplay-changed', (_) => {
+    ipcMain.on('ytd:autoplay-changed', (_) => {
       requestQueueInformation();
     });
 
-    ipcMain.on('peard:get-queue-response', (_, queue: QueueResponse) => {
+    ipcMain.on('ytd:get-queue-response', (_, queue: QueueResponse) => {
       if (!queue) {
         return;
       }
@@ -309,7 +308,7 @@ export function registerMPRIS(win: BrowserWindow) {
       console.trace(error);
     });
 
-    ipcMain.on('peard:volume-changed', (_, newVolumeState: VolumeState) => {
+    ipcMain.on('ytd:volume-changed', (_, newVolumeState: VolumeState) => {
       player.volume = newVolumeState.isMuted
         ? 0
         : Number.parseFloat((newVolumeState.state / 100).toFixed(2));
@@ -324,39 +323,36 @@ export function registerMPRIS(win: BrowserWindow) {
       }
     });
 
-    registerCallback((songInfo: SongInfo, event) => {
-      if (event === SongInfoEvent.TimeChanged) {
-        player.setPosition(secToMicro(songInfo.elapsedSeconds ?? 0));
+    registerCallback((videoInfo: VideoInfo, event) => {
+      if (event === VideoInfoEvent.TimeChanged) {
+        player.setPosition(secToMicro(videoInfo.elapsedSeconds ?? 0));
         return;
       }
       if (player) {
         const data: Track = {
-          'mpris:length': secToMicro(songInfo.songDuration),
-          ...(songInfo.imageSrc
-            ? { 'mpris:artUrl': songInfo.imageSrc }
+          'mpris:length': secToMicro(videoInfo.videoDuration),
+          ...(videoInfo.imageSrc
+            ? { 'mpris:artUrl': videoInfo.imageSrc }
             : undefined),
-          'xesam:title': songInfo.title,
-          'xesam:url': songInfo.url,
-          'xesam:artist': [songInfo.artist],
+          'xesam:title': videoInfo.title,
+          'xesam:url': videoInfo.url,
+          'xesam:artist': [videoInfo.author],
           'mpris:trackid': player.objectPath(
-            `Track/${correctId(songInfo.videoId)}`,
+            `Track/${correctId(videoInfo.videoId)}`,
           ),
         };
-        if (songInfo.album) {
-          data['xesam:album'] = songInfo.album;
-        }
-        currentSongInfo = songInfo;
+        currentVideoInfo = videoInfo;
 
         player.metadata = data;
 
         const currentElapsedMicroSeconds = secToMicro(
-          songInfo.elapsedSeconds ?? 0,
+          videoInfo.elapsedSeconds ?? 0,
         );
         player.setPosition(currentElapsedMicroSeconds);
         player.seeked(currentElapsedMicroSeconds);
 
         player.setPlaybackStatus(
-          songInfo.isPaused ? PLAYBACK_STATUS_PAUSED : PLAYBACK_STATUS_PLAYING,
+          videoInfo.isPaused ? PLAYBACK_STATUS_PAUSED : PLAYBACK_STATUS_PLAYING,
         );
       }
       requestQueueInformation();

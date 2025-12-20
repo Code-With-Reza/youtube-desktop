@@ -7,7 +7,7 @@ import { t } from '@/i18n';
 
 import { QualitySettingButton } from './templates/quality-setting-button';
 
-import type { MusicPlayer } from '@/types/music-player';
+import type { YoutubePlayer } from '@/types/youtube-player';
 
 export default createPlugin({
   name: () => t('plugins.quality-changer.name'),
@@ -19,7 +19,7 @@ export default createPlugin({
 
   backend({ ipc, window }) {
     ipc.handle(
-      'peard:quality-changer',
+      'ytd:quality-changer',
       async (qualityLabels: string[], currentIndex: number) =>
         await dialog.showMessageBox(window, {
           type: 'question',
@@ -44,7 +44,7 @@ export default createPlugin({
 
   renderer: {
     qualitySettingsButtonContainer: document.createElement('div'),
-    onPlayerApiReady(api: MusicPlayer, context) {
+    onPlayerApiReady(api: YoutubePlayer, context) {
       const chooseQuality = async (e: MouseEvent) => {
         e.stopPropagation();
 
@@ -53,7 +53,7 @@ export default createPlugin({
         const currentIndex = qualityLevels.indexOf(api.getPlaybackQuality());
 
         const quality = (await context.ipc.invoke(
-          'peard:quality-changer',
+          'ytd:quality-changer',
           api.getAvailableQualityLabels(),
           currentIndex,
         )) as {
@@ -83,7 +83,7 @@ export default createPlugin({
 
       const setup = () => {
         document
-          .querySelector('.top-row-buttons.ytmusic-player')
+          .querySelector('.top-row-buttons.ytyoutube-player')
           ?.prepend(this.qualitySettingsButtonContainer);
       };
 
@@ -91,7 +91,7 @@ export default createPlugin({
     },
     stop() {
       document
-        .querySelector('.top-row-buttons.ytmusic-player')
+        .querySelector('.top-row-buttons.ytyoutube-player')
         ?.removeChild(this.qualitySettingsButtonContainer);
     },
   },

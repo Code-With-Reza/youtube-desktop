@@ -1,33 +1,15 @@
-import { createSignal, onMount } from 'solid-js';
+import { Component } from 'solid-js';
+import { t } from '@/i18n';
 
-const states = [
-  '(>_<)',
-  '{ (>_<) }',
-  '{{ (>_<) }}',
-  '{{{ (>_<) }}}',
-  '{{ (>_<) }}',
-  '{ (>_<) }',
-];
-export const LoadingKaomoji = () => {
-  const [counter, setCounter] = createSignal(0);
-
-  onMount(() => {
-    const interval = setInterval(() => setCounter((old) => old + 1), 500);
-    return () => clearInterval(interval);
-  });
-
-  return (
-    <yt-formatted-string
-      class="text-lyrics description ytmusic-description-shelf-renderer"
-      style={{
-        'display': 'inline-flex',
-        'justify-content': 'center',
-        'width': '100%',
-        'user-select': 'none',
-      }}
-      text={{
-        runs: [{ text: states[counter() % states.length] }],
-      }}
-    />
-  );
+export const LoadingKaomoji: Component = () => {
+    return (
+        <div class="kaomoji-container">
+            <div class="kaomoji">
+                ( ◕ ⏳ ◕ )
+            </div>
+            <div class="kaomoji-text">
+                {t('plugins.synced-lyrics.loading')}
+            </div>
+        </div>
+    );
 };

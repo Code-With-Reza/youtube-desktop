@@ -1,4 +1,4 @@
-import type { LyricProvider, LyricResult, SearchSongInfo } from '../types';
+import type { LyricProvider, LyricResult, SearchVideoInfo } from '../types';
 
 const preloadedStateRegex = /__PRELOADED_STATE__ = JSON\.parse\('(.*?)'\);/;
 const preloadHtmlRegex = /body":{"html":"(.*?)","children"/;
@@ -9,7 +9,7 @@ export class LyricsGenius implements LyricProvider {
   private domParser = new DOMParser();
 
   // prettier-ignore
-  async search({ title, artist }: SearchSongInfo): Promise<LyricResult | null> {
+  async search({ title, artist }: SearchVideoInfo): Promise<LyricResult | null> {
     const query = new URLSearchParams({
       q: `${artist} ${title}`,
       page: '1',

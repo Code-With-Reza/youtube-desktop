@@ -52,6 +52,6 @@ export const isPlayerMenu = (menu?: HTMLElement | null) => {
         })
       | null
   )?.ytEventForwardingBehavior?.forwarder_?.eventSink?.matches(
-    'ytmusic-menu-renderer.ytmusic-player-bar',
+    'ytmusic-menu-renderer.ytyoutube-player-bar',
   );
 };

@@ -7,7 +7,7 @@ export const QualitySettingButton = (props: QualitySettingButtonProps) => (
   <yt-icon-button
     aria-disabled={false}
     aria-label={props.label}
-    class="player-quality-button style-scope ytmusic-player"
+    class="player-quality-button style-scope ytyoutube-player"
     icon={'yt-icons:settings'}
     on:click={(e) => props.onClick(e)}
     role={'button'}

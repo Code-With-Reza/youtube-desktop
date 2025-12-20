@@ -1,6 +1,6 @@
 import { createRenderer } from '@/utils';
 
-import type { MusicPlayer } from '@/types/music-player';
+import type { YoutubePlayer } from '@/types/youtube-player';
 import type { RendererContext } from '@/types/contexts';
 import type { CustomOutputPluginConfig } from './index';
 
@@ -48,23 +48,23 @@ export const renderer = createRenderer<
     await updateSinkId(audioContext, this.options!.output);
   },
 
-  async onPlayerApiReady(_: MusicPlayer, context) {
+  async onPlayerApiReady(_: YoutubePlayer, context) {
     this.options = await context.getConfig();
     await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     navigator.mediaDevices.ondevicechange = async () =>
       await updateDeviceList(context);
 
-    document.addEventListener('peard:audio-can-play', this.audioCanPlayHandler, {
+    document.addEventListener('ytd:audio-can-play', this.audioCanPlayHandler as unknown as EventListener, {
       once: true,
-      passive: true,
     });
     await updateDeviceList(context);
   },
 
   stop() {
+    // The following checking is just to make sure we don't have double event listener
     document.removeEventListener(
-      'peard:audio-can-play',
-      this.audioCanPlayHandler,
+      'ytd:audio-can-play',
+      this.audioCanPlayHandler as unknown as EventListener,
     );
     navigator.mediaDevices.ondevicechange = null;
   },

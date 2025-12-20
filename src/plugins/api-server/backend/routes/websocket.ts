@@ -2,11 +2,10 @@ import { createRoute } from '@hono/zod-openapi';
 
 import { type NodeWebSocket } from '@hono/node-ws';
 
-import {
-  registerCallback,
-  type SongInfo,
-  SongInfoEvent,
-} from '@/providers/song-info';
+import registerCallback, {
+  type VideoInfo,
+  VideoInfoEvent,
+} from '@/providers/video-info';
 
 import { API_VERSION } from '../api-version';
 
@@ -28,7 +27,7 @@ enum DataTypes {
 }
 
 type PlayerState = {
-  song?: SongInfo;
+  song?: VideoInfo;
   isPlaying: boolean;
   muted: boolean;
   position: number;
@@ -45,7 +44,7 @@ export const register = (
   let volumeState: VolumeState | undefined = undefined;
   let repeat: RepeatMode = 'NONE';
   let shuffle = false;
-  let lastSongInfo: SongInfo | undefined = undefined;
+  let lastVideoInfo: VideoInfo | undefined = undefined;
 
   const sockets = new Set<WSContext<WebSocket>>();
 
@@ -56,45 +55,45 @@ export const register = (
   };
 
   const createPlayerState = ({
-    songInfo,
+    videoInfo,
     volumeState,
     repeat,
     shuffle,
   }: {
-    songInfo?: SongInfo;
+    videoInfo?: VideoInfo;
     volumeState?: VolumeState;
     repeat: RepeatMode;
     shuffle: boolean;
   }): PlayerState => ({
-    song: songInfo,
-    isPlaying: songInfo ? !songInfo.isPaused : false,
+    song: videoInfo,
+    isPlaying: videoInfo ? !videoInfo.isPaused : false,
     muted: volumeState?.isMuted ?? false,
-    position: songInfo?.elapsedSeconds ?? 0,
+    position: videoInfo?.elapsedSeconds ?? 0,
     volume: volumeState?.state ?? 100,
     repeat,
     shuffle,
   });
 
-  registerCallback((songInfo, event) => {
-    if (event === SongInfoEvent.VideoSrcChanged) {
-      send(DataTypes.VideoChanged, { song: songInfo, position: 0 });
+  registerCallback((videoInfo: VideoInfo, event: VideoInfoEvent) => {
+    if (event === VideoInfoEvent.VideoSrcChanged) {
+      send(DataTypes.VideoChanged, { song: videoInfo, position: 0 });
     }
 
-    if (event === SongInfoEvent.PlayOrPaused) {
+    if (event === VideoInfoEvent.PlayOrPaused) {
       send(DataTypes.PlayerStateChanged, {
-        isPlaying: !(songInfo?.isPaused ?? true),
-        position: songInfo.elapsedSeconds,
+        isPlaying: !(videoInfo?.isPaused ?? true),
+        position: videoInfo.elapsedSeconds,
       });
     }
 
-    if (event === SongInfoEvent.TimeChanged) {
-      send(DataTypes.PositionChanged, { position: songInfo.elapsedSeconds });
+    if (event === VideoInfoEvent.TimeChanged) {
+      send(DataTypes.PositionChanged, { position: videoInfo.elapsedSeconds });
     }
 
-    lastSongInfo = { ...songInfo };
+    lastVideoInfo = { ...videoInfo };
   });
 
-  ipc.on('peard:volume-changed', (newVolumeState: VolumeState) => {
+  ipc.on('ytd:volume-changed', (newVolumeState: VolumeState) => {
     volumeState = newVolumeState;
     send(DataTypes.VolumeChanged, {
       volume: volumeState.state,
@@ -102,16 +101,16 @@ export const register = (
     });
   });
 
-  ipc.on('peard:repeat-changed', (mode: RepeatMode) => {
+  ipc.on('ytd:repeat-changed', (mode: RepeatMode) => {
     repeat = mode;
     send(DataTypes.RepeatChanged, { repeat });
   });
 
-  ipc.on('peard:seeked', (t: number) => {
+  ipc.on('ytd:seeked', (t: number) => {
     send(DataTypes.PositionChanged, { position: t });
   });
 
-  ipc.on('peard:shuffle-changed', (newShuffle: boolean) => {
+  ipc.on('ytd:shuffle-changed', (newShuffle: boolean) => {
     shuffle = newShuffle;
     send(DataTypes.ShuffleChanged, { shuffle });
   });
@@ -137,7 +136,7 @@ export const register = (
           JSON.stringify({
             type: DataTypes.PlayerInfo,
             ...createPlayerState({
-              songInfo: lastSongInfo,
+              videoInfo: lastVideoInfo,
               volumeState,
               repeat,
               shuffle,

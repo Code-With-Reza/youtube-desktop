@@ -2,9 +2,10 @@ import style from './style.css?inline';
 
 import { t } from '@/i18n';
 import { createPlugin } from '@/utils';
+import { waitForElement } from '@/utils/wait-for-element';
 import { menu } from './menu';
 import { type AmbientModePluginConfig } from './types';
-import { waitForElement } from '@/utils/wait-for-element';
+
 
 const defaultConfig: AmbientModePluginConfig = {
   enabled: false,
@@ -77,10 +78,10 @@ export default createPlugin({
           if (this.isFullscreen) blurImage.classList.add('fullscreen');
           else blurImage.classList.remove('fullscreen');
 
-          blurImage.style.setProperty('--width', `${this.size}%`);
-          blurImage.style.setProperty('--height', `${this.size}%`);
-          blurImage.style.setProperty('--blur', `${this.blur}px`);
-          blurImage.style.setProperty('--opacity', `${this.opacity}`);
+          blurImage.style.setProperty('--width', `${this.size}% `);
+          blurImage.style.setProperty('--height', `${this.size}% `);
+          blurImage.style.setProperty('--blur', `${this.blur} px`);
+          blurImage.style.setProperty('--opacity', `${this.opacity} `);
         };
         this.update();
 
@@ -156,10 +157,10 @@ export default createPlugin({
           if (this.isFullscreen) blurCanvas.classList.add('fullscreen');
           else blurCanvas.classList.remove('fullscreen');
 
-          blurCanvas.style.setProperty('--width', `${this.size}%`);
-          blurCanvas.style.setProperty('--height', `${this.size}%`);
-          blurCanvas.style.setProperty('--blur', `${this.blur}px`);
-          blurCanvas.style.setProperty('--opacity', `${this.opacity}`);
+          blurCanvas.style.setProperty('--width', `${this.size}% `);
+          blurCanvas.style.setProperty('--height', `${this.size}% `);
+          blurCanvas.style.setProperty('--blur', `${this.blur} px`);
+          blurCanvas.style.setProperty('--opacity', `${this.opacity} `);
         };
         this.update();
 

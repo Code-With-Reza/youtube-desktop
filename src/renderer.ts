@@ -5,7 +5,7 @@ import 'mdui/mdui.css';
 import 'mdui';
 
 import { startingPages } from './providers/extracted-data';
-import { setupSongInfo } from './providers/song-info-front';
+import setupVideoInfo from './providers/video-info-front';
 import {
   createContext,
   forceLoadRendererPlugin,
@@ -23,15 +23,15 @@ import {
 } from '@/utils/trusted-types';
 
 import type { PluginConfig } from '@/types/plugins';
-import type { MusicPlayer } from '@/types/music-player';
+import type { YoutubePlayer } from '@/types/youtube-player';
 import type { QueueElement } from '@/types/queue';
-import type { QueueResponse } from '@/types/music-player-desktop-internal';
-import type { MusicPlayerAppElement } from '@/types/music-player-app-element';
+import type { QueueResponse } from '@/types/youtube-desktop-internal';
+import type { YouTubeAppElement } from '@/types/youtube-music-app-element';
 import type { SearchBoxElement } from '@/types/search-box-element';
 
 setTheme('dark');
 
-let api: (Element & MusicPlayer) | null = null;
+let api: (Element & YoutubePlayer) | null = null;
 let isPluginLoaded = false;
 let isApiLoaded = false;
 let firstDataLoaded = false;
@@ -70,12 +70,12 @@ async function onApiLoaded() {
       window.dispatchEvent(new Event('resize')),
     );
 
-  window.ipcRenderer.on('peard:previous-video', () => {
+  window.ipcRenderer.on('ytd:previous-video', () => {
     document
       .querySelector<HTMLElement>('.previous-button.ytmusic-player-bar')
       ?.click();
   });
-  window.ipcRenderer.on('peard:next-video', () => {
+  window.ipcRenderer.on('ytd:next-video', () => {
     document
       .querySelector<HTMLElement>('.next-button.ytmusic-player-bar')
       ?.click();
@@ -194,7 +194,7 @@ async function onApiLoaded() {
     'peard:add-to-queue',
     (_, videoId: string, queueInsertPosition: string) => {
       const queue = document.querySelector<QueueElement>('#queue');
-      const app = document.querySelector<MusicPlayerAppElement>('ytmusic-app');
+      const app = document.querySelector<YouTubeAppElement>('ytmusic-app');
       if (!app) return;
 
       const store = queue?.queue.store.store;
@@ -222,13 +222,13 @@ async function onApiLoaded() {
                 index:
                   queueInsertPosition === 'INSERT_AFTER_CURRENT_VIDEO'
                     ? queueItems.findIndex(
-                        (it) =>
-                          (
-                            it.playlistPanelVideoRenderer ||
-                            it.playlistPanelVideoWrapperRenderer
-                              ?.primaryRenderer.playlistPanelVideoRenderer
-                          )?.selected,
-                      ) + 1 || queueItemsLength
+                      (it) =>
+                        (
+                          it.playlistPanelVideoRenderer ||
+                          it.playlistPanelVideoWrapperRenderer
+                            ?.primaryRenderer.playlistPanelVideoRenderer
+                        )?.selected,
+                    ) + 1 || queueItemsLength
                     : queueItemsLength,
                 items: result.queueDatas
                   .map((it) =>
@@ -286,7 +286,7 @@ async function onApiLoaded() {
   window.ipcRenderer.on(
     'peard:search',
     async (_, query: string, params?: string, continuation?: string) => {
-      const app = document.querySelector<MusicPlayerAppElement>('ytmusic-app');
+      const app = document.querySelector<YouTubeAppElement>('ytmusic-app');
       const searchBox =
         document.querySelector<SearchBoxElement>('ytmusic-search-box');
 
@@ -362,7 +362,7 @@ async function onApiLoaded() {
   const startingPage: string = window.mainConfig.get('options.startingPage');
   if (startingPage && startingPages[startingPage]) {
     document
-      .querySelector<MusicPlayerAppElement>('ytmusic-app')
+      .querySelector<YouTubeAppElement>('ytmusic-app')
       ?.navigate(startingPages[startingPage]);
   }
 
@@ -394,14 +394,12 @@ async function onApiLoaded() {
     const style = document.createElement('style');
     style.textContent = `
       ytmusic-player-bar[is-mweb-player-bar-modernization-enabled] .middle-controls-buttons.ytmusic-player-bar, #like-button-renderer {
-        display: ${
-          likeButtonsOptions === 'hide' ? 'none' : 'inherit'
-        } !important;
+        display: ${likeButtonsOptions === 'hide' ? 'none' : 'inherit'
+      } !important;
       }
       ytmusic-player-bar[is-mweb-player-bar-modernization-enabled] .middle-controls.ytmusic-player-bar {
-        justify-content: ${
-          likeButtonsOptions === 'hide' ? 'flex-start' : 'space-between'
-        } !important;
+        justify-content: ${likeButtonsOptions === 'hide' ? 'flex-start' : 'space-between'
+      } !important;
       }`;
 
     document.head.appendChild(style);
@@ -412,7 +410,7 @@ async function onApiLoaded() {
  * Original still using ES5, so we need to define custom elements using ES5 style
  */
 const definePearTransElements = () => {
-  const PearTrans = function () {};
+  const PearTrans = function () { };
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   PearTrans.prototype = Object.create(HTMLElement.prototype);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -502,14 +500,14 @@ const initObserver = async () => {
   });
 
   const observer = new MutationObserver(() => {
-    const playerApi = document.querySelector<Element & MusicPlayer>(
+    const playerApi = document.querySelector<Element & YoutubePlayer>(
       '#movie_player',
     );
     if (playerApi) {
       observer.disconnect();
 
-      // Inject song-info provider
-      setupSongInfo(playerApi);
+      // Inject video-info provider
+      setupVideoInfo(playerApi);
       const dataLoadedListener = (name: string) => {
         if (!firstDataLoaded && name === 'dataloaded') {
           firstDataLoaded = true;

@@ -8,7 +8,7 @@ const handlePlay = (e: MouseEvent) => {
 
   // Player bar handler
   if (
-    e.target.closest('ytmusic-player-bar') &&
+    e.target.closest('ytyoutube-player-bar') &&
     !document.body.classList.contains('unobtrusive-player--auto-closing')
   ) {
     document.body.classList.remove('unobtrusive-player--did-play');
@@ -18,7 +18,7 @@ const handlePlay = (e: MouseEvent) => {
   // Song play button handler
   if (
     e.target.closest('ytmusic-play-button-renderer') &&
-    !e.target.closest('ytmusic-player-page')
+    !e.target.closest('ytyoutube-player-page')
   ) {
     document.body.classList.add('unobtrusive-player--did-play');
     return;

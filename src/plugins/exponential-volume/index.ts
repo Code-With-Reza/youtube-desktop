@@ -1,7 +1,7 @@
 import { createPlugin } from '@/utils';
 import { t } from '@/i18n';
 
-import type { MusicPlayer } from '@/types/music-player';
+import type { YoutubePlayer } from '@/types/youtube-player';
 
 export default createPlugin({
   name: () => t('plugins.exponential-volume.name'),
@@ -12,7 +12,7 @@ export default createPlugin({
   },
   renderer: {
     onPlayerApiReady(playerApi) {
-      const syncVolume = (playerApi: MusicPlayer) => {
+      const syncVolume = (playerApi: YoutubePlayer) => {
         if (playerApi.getPlayerState() === 3) {
           setTimeout(() => syncVolume(playerApi), 0);
           return;

@@ -9,7 +9,7 @@ import { swaggerUI } from '@hono/swagger-ui';
 import { serve } from '@hono/node-server';
 import { createNodeWebSocket } from '@hono/node-ws';
 
-import { registerCallback } from '@/providers/song-info';
+import registerCallback from '@/providers/video-info';
 import { createBackend } from '@/utils';
 
 import { JWTPayloadSchema } from './scheme';
@@ -31,26 +31,26 @@ export const backend = createBackend<BackendType, APIServerConfig>({
     const config = await ctx.getConfig();
 
     this.init(ctx);
-    registerCallback((songInfo) => {
-      this.songInfo = songInfo;
+    registerCallback((videoInfo) => {
+      this.videoInfo = videoInfo;
     });
 
-    ctx.ipc.on('peard:player-api-loaded', () => {
-      ctx.ipc.send('peard:setup-seeked-listener');
-      ctx.ipc.send('peard:setup-time-changed-listener');
-      ctx.ipc.send('peard:setup-repeat-changed-listener');
-      ctx.ipc.send('peard:setup-like-changed-listener');
-      ctx.ipc.send('peard:setup-volume-changed-listener');
-      ctx.ipc.send('peard:setup-shuffle-changed-listener');
+    ctx.ipc.on('ytd:player-api-loaded', () => {
+      ctx.ipc.send('ytd:setup-seeked-listener');
+      ctx.ipc.send('ytd:setup-time-changed-listener');
+      ctx.ipc.send('ytd:setup-repeat-changed-listener');
+      ctx.ipc.send('ytd:setup-like-changed-listener');
+      ctx.ipc.send('ytd:setup-volume-changed-listener');
+      ctx.ipc.send('ytd:setup-shuffle-changed-listener');
     });
 
     ctx.ipc.on(
-      'peard:repeat-changed',
+      'ytd:repeat-changed',
       (mode: RepeatMode) => (this.currentRepeatMode = mode),
     );
 
     ctx.ipc.on(
-      'peard:volume-changed',
+      'ytd:volume-changed',
       (newVolumeState: VolumeState) => (this.volumeState = newVolumeState),
     );
 
@@ -123,7 +123,7 @@ export const backend = createBackend<BackendType, APIServerConfig>({
     registerControl(
       this.app,
       backendCtx,
-      () => this.songInfo,
+      () => this.videoInfo,
       () => this.currentRepeatMode,
       () =>
         backendCtx.window.webContents.executeJavaScript(
@@ -170,21 +170,21 @@ export const backend = createBackend<BackendType, APIServerConfig>({
       const serveOptions =
         config.useHttps && config.certPath && config.keyPath
           ? {
-              fetch: this.app.fetch.bind(this.app),
-              port: config.port,
-              hostname: config.hostname,
-              createServer: createHttpsServer,
-              serverOptions: {
-                key: readFileSync(config.keyPath),
-                cert: readFileSync(config.certPath),
-              },
-            }
+            fetch: this.app.fetch.bind(this.app),
+            port: config.port,
+            hostname: config.hostname,
+            createServer: createHttpsServer,
+            serverOptions: {
+              key: readFileSync(config.keyPath),
+              cert: readFileSync(config.certPath),
+            },
+          }
           : {
-              fetch: this.app.fetch.bind(this.app),
-              port: config.port,
-              hostname: config.hostname,
-              createServer: createHttpServer,
-            };
+            fetch: this.app.fetch.bind(this.app),
+            port: config.port,
+            hostname: config.hostname,
+            createServer: createHttpServer,
+          };
 
       this.server = serve(serveOptions);
 

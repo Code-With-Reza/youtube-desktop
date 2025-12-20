@@ -3,7 +3,7 @@ import { net } from 'electron';
 import { ScrobblerBase } from './base';
 
 import type { SetConfType } from '../main';
-import type { SongInfo } from '@/providers/song-info';
+import type { VideoInfo } from '@/providers/video-info';
 import type { ScrobblerPluginConfig } from '../index';
 import { APPLICATION_NAME } from '@/i18n';
 
@@ -38,7 +38,7 @@ export class ListenbrainzScrobbler extends ScrobblerBase {
   }
 
   override setNowPlaying(
-    songInfo: SongInfo,
+    videoInfo: VideoInfo,
     config: ScrobblerPluginConfig,
     _setConfig: SetConfType,
   ): void {
@@ -49,12 +49,12 @@ export class ListenbrainzScrobbler extends ScrobblerBase {
       return;
     }
 
-    const body = createRequestBody('playing_now', songInfo, config);
+    const body = createRequestBody('playing_now', videoInfo, config);
     submitListen(body, config);
   }
 
   override addScrobble(
-    songInfo: SongInfo,
+    videoInfo: VideoInfo,
     config: ScrobblerPluginConfig,
     _setConfig: SetConfType,
   ): void {
@@ -65,7 +65,7 @@ export class ListenbrainzScrobbler extends ScrobblerBase {
       return;
     }
 
-    const body = createRequestBody('single', songInfo, config);
+    const body = createRequestBody('single', videoInfo, config);
     body.payload[0].listened_at = Math.trunc(Date.now() / 1000);
 
     submitListen(body, config);
@@ -74,28 +74,28 @@ export class ListenbrainzScrobbler extends ScrobblerBase {
 
 function createRequestBody(
   listenType: string,
-  songInfo: SongInfo,
+  videoInfo: VideoInfo,
   config: ScrobblerPluginConfig,
 ): ListenbrainzRequestBody {
   const title =
-    config.alternativeTitles && songInfo.alternativeTitle !== undefined
-      ? songInfo.alternativeTitle
-      : songInfo.title;
+    config.alternativeTitles && videoInfo.alternativeTitle !== undefined
+      ? videoInfo.alternativeTitle
+      : videoInfo.title;
 
   const artist =
-    config.alternativeArtist && songInfo.tags?.at(0) !== undefined
-      ? songInfo.tags?.at(0)
-      : songInfo.artist;
+    config.alternativeArtist && videoInfo.tags?.at(0) !== undefined
+      ? videoInfo.tags?.at(0)
+      : videoInfo.artist;
 
   const trackMetadata = {
     artist_name: artist,
     track_name: title,
-    release_name: songInfo.album ?? undefined,
+    release_name: videoInfo.album ?? undefined,
     additional_info: {
       media_player: `${APPLICATION_NAME} Desktop App`,
       submission_client: `${APPLICATION_NAME} Desktop App - Scrobbler Plugin`,
-      origin_url: songInfo.url,
-      duration: songInfo.songDuration,
+      origin_url: videoInfo.url,
+      duration: videoInfo.songDuration,
     },
   };
 

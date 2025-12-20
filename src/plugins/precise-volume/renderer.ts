@@ -3,13 +3,13 @@ import { type PreciseVolumePluginConfig } from './index';
 import { debounce } from '@/providers/decorators';
 
 import type { RendererContext } from '@/types/contexts';
-import type { MusicPlayer } from '@/types/music-player';
+import type { YoutubePlayer } from '@/types/youtube-player';
 
 function $<E extends Element = Element>(selector: string) {
   return document.querySelector<E>(selector);
 }
 
-let api: MusicPlayer;
+let api: YoutubePlayer;
 
 export const moveVolumeHud = debounce((showVideo: boolean) => {
   const volumeHud = $<HTMLElement>('#volumeHud');
@@ -18,14 +18,14 @@ export const moveVolumeHud = debounce((showVideo: boolean) => {
   }
 
   volumeHud.style.top = showVideo
-    ? `${($('ytmusic-player')!.clientHeight - $('video')!.clientHeight) / 2}px`
+    ? `${($('ytyoutube-player')!.clientHeight - $('video')!.clientHeight) / 2}px`
     : '0';
 }, 250);
 
 let options: PreciseVolumePluginConfig;
 
 export const onPlayerApiReady = async (
-  playerApi: MusicPlayer,
+  playerApi: YoutubePlayer,
   context: RendererContext<PreciseVolumePluginConfig>,
 ) => {
   options = await context.getConfig();
@@ -71,7 +71,7 @@ export const onPlayerApiReady = async (
         const videoMode = () =>
           api.getPlayerResponse().videoDetails?.musicVideoType !==
           'MUSIC_VIDEO_TYPE_ATV';
-        $('video')?.addEventListener('peard:src-changed', () =>
+        $('video')?.addEventListener('ytd:src-changed', () =>
           moveVolumeHud(videoMode()),
         );
       }
@@ -130,7 +130,7 @@ export const onPlayerApiReady = async (
 
   /** Add onwheel event to play bar and also track if play bar is hovered */
   function setupPlaybar() {
-    const playerbar = $<HTMLElement>('ytmusic-player-bar');
+    const playerbar = $<HTMLElement>('ytyoutube-player-bar');
     if (!playerbar) return;
 
     playerbar.addEventListener('wheel', (event) => {

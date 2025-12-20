@@ -24,7 +24,7 @@ export const PlaybackSpeedSlider = (props: PlaybackSpeedSliderProps) => (
         aria-valuemax="2"
         aria-valuemin="0"
         aria-valuenow={props.speed}
-        class="volume-slider style-scope ytmusic-player-bar on-hover"
+        class="volume-slider style-scope ytyoutube-player-bar on-hover"
         dir="ltr"
         max="2"
         min="0"

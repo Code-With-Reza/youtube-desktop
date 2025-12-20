@@ -1,15 +1,15 @@
 // Segments are an array [ [start, end], … ]
-import type { Segment } from './types';
+import type { SortableSegment } from './types';
 
-export const sortSegments = (segments: Segment[]) => {
+export const sortSegments = (segments: SortableSegment[]) => {
   segments.sort((segment1, segment2) =>
-    segment1[0] === segment2[0]
-      ? segment1[1] - segment2[1]
-      : segment1[0] - segment2[0],
+    segment1.segment[0] === segment2.segment[0]
+      ? segment1.segment[1] - segment2.segment[1]
+      : segment1.segment[0] - segment2.segment[0],
   );
 
-  const compiledSegments: Segment[] = [];
-  let currentSegment: Segment | undefined;
+  const compiledSegments: SortableSegment[] = [];
+  let currentSegment: SortableSegment | undefined;
 
   for (const segment of segments) {
     if (!currentSegment) {
@@ -17,15 +17,24 @@ export const sortSegments = (segments: Segment[]) => {
       continue;
     }
 
-    if (currentSegment[1] < segment[0]) {
+    // Check if the segments overlap or are adjacent AND belong to the same category
+    if (
+      currentSegment.segment[1] >= segment.segment[0] && // Overlapping or adjacent
+      currentSegment.category === segment.category // Same category
+    ) {
+      // Merge the segments
+      currentSegment.segment[1] = Math.max(
+        currentSegment.segment[1],
+        segment.segment[1]
+      );
+    } else {
+      // Push the current segment and start a new one
       compiledSegments.push(currentSegment);
       currentSegment = segment;
-      continue;
     }
-
-    currentSegment[1] = Math.max(currentSegment[1], segment[1]);
   }
 
+  // Push the last segment if it exists
   if (currentSegment) {
     compiledSegments.push(currentSegment);
   }

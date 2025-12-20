@@ -8,14 +8,14 @@ import { t } from '@/i18n';
 
 import type { ScrobblerPluginConfig } from '../index';
 import type { SetConfType } from '../main';
-import type { SongInfo } from '@/providers/song-info';
+import type { VideoInfo } from '@/providers/video-info';
 
 interface LastFmData {
   method: string;
   timestamp?: number;
 }
 
-interface LastFmSongData {
+interface LastFmVideoData {
   track?: string;
   duration?: number;
   artist?: string;
@@ -82,7 +82,7 @@ export class LastFmScrobbler extends ScrobblerBase {
   }
 
   override setNowPlaying(
-    songInfo: SongInfo,
+    videoInfo: VideoInfo,
     config: ScrobblerPluginConfig,
     setConfig: SetConfType,
   ): void {
@@ -94,11 +94,11 @@ export class LastFmScrobbler extends ScrobblerBase {
     const data = {
       method: 'track.updateNowPlaying',
     };
-    this.postSongDataToAPI(songInfo, config, data, setConfig);
+    this.postVideoDataToAPI(videoInfo, config, data, setConfig);
   }
 
   override addScrobble(
-    songInfo: SongInfo,
+    videoInfo: VideoInfo,
     config: ScrobblerPluginConfig,
     setConfig: SetConfType,
   ): void {
@@ -106,18 +106,18 @@ export class LastFmScrobbler extends ScrobblerBase {
       return;
     }
 
-    // This adds one scrobbled song to last.fm
+    // This adds one scrobbled video to last.fm
     const data = {
       method: 'track.scrobble',
       timestamp: Math.trunc(
-        (Date.now() - (songInfo.elapsedSeconds ?? 0)) / 1000,
+        (Date.now() - (videoInfo.elapsedSeconds ?? 0)) / 1000,
       ),
     };
-    this.postSongDataToAPI(songInfo, config, data, setConfig);
+    this.postVideoDataToAPI(videoInfo, config, data, setConfig);
   }
 
-  private async postSongDataToAPI(
-    songInfo: SongInfo,
+  private async postVideoDataToAPI(
+    videoInfo: VideoInfo,
     config: ScrobblerPluginConfig,
     data: LastFmData,
     setConfig: SetConfType,
@@ -127,26 +127,32 @@ export class LastFmScrobbler extends ScrobblerBase {
       await this.createSession(config, setConfig);
     }
 
-    const title =
-      config.alternativeTitles && songInfo.alternativeTitle !== undefined
-        ? songInfo.alternativeTitle
-        : songInfo.title;
+    const trackTitle =
+      config.alternativeTitles && videoInfo.alternativeTitle !== undefined
+        ? videoInfo.alternativeTitle
+        : videoInfo.title;
 
-    const artist =
-      config.alternativeArtist && songInfo.tags?.at(0) !== undefined
-        ? songInfo.tags?.at(0)
-        : songInfo.artist;
+    const trackArtist =
+      config.alternativeArtist && videoInfo.tags?.at(0) !== undefined
+        ? videoInfo.tags?.at(0)
+        : videoInfo.author;
 
-    const postData: LastFmSongData = {
-      track: title,
-      duration: songInfo.songDuration,
-      artist: artist,
-      ...(songInfo.album ? { album: songInfo.album } : undefined), // Will be undefined if current song is a video
+    const postData: LastFmVideoData = {
+      track: trackTitle,
+      duration: videoInfo.videoDuration,
+      artist: trackArtist,
+      ...(videoInfo.album ? { album: videoInfo.album } : undefined), // Will be undefined if current song is a video
       api_key: config.scrobblers.lastfm.apiKey,
       sk: config.scrobblers.lastfm.sessionKey,
       format: 'json',
       ...data,
     };
+
+    if (
+      !videoInfo.isPaused
+    ) {
+      postData.timestamp = Math.floor(Date.now() / 1000) - (videoInfo.elapsedSeconds ?? 0);
+    }
 
     postData.api_sig = createApiSig(postData, config.scrobblers.lastfm.secret);
     const formData = createFormData(postData);
@@ -183,11 +189,11 @@ export class LastFmScrobbler extends ScrobblerBase {
   }
 }
 
-const createFormData = (parameters: LastFmSongData) => {
+const createFormData = (parameters: LastFmVideoData) => {
   // Creates the body for in the post request
   const formData = new URLSearchParams();
   for (const key in parameters) {
-    formData.append(key, String(parameters[key as keyof LastFmSongData]));
+    formData.append(key, String(parameters[key as keyof LastFmVideoData]));
   }
 
   return formData;
@@ -211,7 +217,7 @@ const createQueryString = (
   return '?' + queryData.join('&');
 };
 
-const createApiSig = (parameters: LastFmSongData, secret: string) => {
+const createApiSig = (parameters: LastFmVideoData, secret: string) => {
   // This function creates the api signature, see: https://www.last.fm/api/authspec
   let sig = '';
 

@@ -1,4 +1,4 @@
-import type { WatchNextResponse } from '@/types/music-player-desktop-internal';
+import type { WatchNextResponse } from '@/types/youtube-desktop-internal';
 
 export interface AlbumDetails {
   responseContext: ResponseContext;
@@ -243,7 +243,7 @@ export interface FlagEndpoint {
   flagAction: string;
 }
 
-// see song-info-front.ts
+// see video-info-front.ts
 export type VideoDataChangeValue = Record<string, unknown> & {
   videoId: string;
   title: string;

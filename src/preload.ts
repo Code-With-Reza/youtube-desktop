@@ -16,7 +16,7 @@ import {
 import { loadI18n, setLanguage } from '@/i18n';
 
 // @ts-expect-error dummy
-globalThis.customElements = { define() {} };
+globalThis.customElements = { define() { } };
 
 new MutationObserver((mutations, observer) => {
   for (const mutation of mutations) {
@@ -77,7 +77,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
     ipcRenderer.sendToHost(channel, ...args),
 });
 contextBridge.exposeInMainWorld('reload', () =>
-  ipcRenderer.send('peard:reload'),
+  ipcRenderer.send('ytd:reload'),
 );
 contextBridge.exposeInMainWorld(
   'ELECTRON_RENDERER_URL',

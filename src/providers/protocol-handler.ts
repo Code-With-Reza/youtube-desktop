@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { app, type BrowserWindow } from 'electron';
 
-import { getSongControls } from './song-controls';
+import { getVideoControls } from './video-controls';
 
 export const APP_PROTOCOL =
   '\u0079\u006f\u0075\u0074\u0075\u0062\u0065\u006d\u0075\u0073\u0069\u0063';
@@ -18,12 +18,12 @@ export function setupProtocolHandler(win: BrowserWindow) {
     app.setAsDefaultProtocolClient(APP_PROTOCOL);
   }
 
-  const songControls = getSongControls(win);
+  const videoControls = getVideoControls(win);
 
-  protocolHandler = ((cmd: keyof typeof songControls, ...args) => {
-    if (Object.keys(songControls).includes(cmd)) {
-      // @ts-expect-error: cmd is a key of songControls
-      songControls[cmd](...args);
+  protocolHandler = ((cmd: keyof typeof videoControls, ...args) => {
+    if (Object.keys(videoControls).includes(cmd)) {
+      // @ts-expect-error: cmd is a key of videoControls
+      videoControls[cmd](...args);
     }
   }) as (cmd: string, ...args: string[]) => void;
 }

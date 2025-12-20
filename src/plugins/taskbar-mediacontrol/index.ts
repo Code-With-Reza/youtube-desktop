@@ -7,12 +7,11 @@ import nextIcon from '@assets/media-icons-black/next.png?asset&asarUnpack';
 import previousIcon from '@assets/media-icons-black/previous.png?asset&asarUnpack';
 
 import { createPlugin } from '@/utils';
-import { getSongControls } from '@/providers/song-controls';
-import {
-  registerCallback,
-  type SongInfo,
-  SongInfoEvent,
-} from '@/providers/song-info';
+import { getVideoControls } from '@/providers/video-controls';
+import registerCallback, {
+  type VideoInfo,
+  VideoInfoEvent,
+} from '@/providers/video-info';
 import { type mediaIcons } from '@/types/media-icons';
 import { t } from '@/i18n';
 import { Platform } from '@/types/plugins';
@@ -27,9 +26,9 @@ export default createPlugin({
   },
 
   async backend({ window }) {
-    let currentSongInfo: SongInfo;
+    let currentVideoInfo: VideoInfo;
 
-    const { playPause, next, previous } = getSongControls(window);
+    const { playPause, next, previous } = getVideoControls(window);
 
     // Util
     const getImagePath = (kind: keyof typeof mediaIcons): string => {
@@ -74,9 +73,9 @@ export default createPlugin({
       previous: await getNativeImage('previous'),
     };
 
-    const setThumbar = (songInfo: SongInfo) => {
-      // Wait for song to start before setting thumbar
-      if (!songInfo?.title) {
+    const setThumbar = (videoInfo: VideoInfo) => {
+      // Wait for video to start before setting thumbar
+      if (!videoInfo?.title) {
         return;
       }
 
@@ -92,7 +91,7 @@ export default createPlugin({
         {
           tooltip: 'Play/Pause',
           // Update icon based on play state
-          icon: songInfo.isPaused ? images.play : images.pause,
+          icon: videoInfo.isPaused ? images.play : images.pause,
           click() {
             playPause();
           },
@@ -107,16 +106,16 @@ export default createPlugin({
       ]);
     };
 
-    registerCallback((songInfo, event) => {
-      if (event !== SongInfoEvent.TimeChanged) {
-        // Update currentsonginfo for win.on('show')
-        currentSongInfo = songInfo;
+    registerCallback((videoInfo, event) => {
+      if (event !== VideoInfoEvent.TimeChanged) {
+        // Update current video info for win.on('show')
+        currentVideoInfo = videoInfo;
         // Update thumbar
-        setThumbar(songInfo);
+        setThumbar(videoInfo);
       }
     });
 
     // Need to set thumbar again after win.show
-    window.on('show', () => setThumbar(currentSongInfo));
+    window.on('show', () => setThumbar(currentVideoInfo));
   },
 });

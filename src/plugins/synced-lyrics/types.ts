@@ -1,4 +1,4 @@
-import type { SongInfo } from '@/providers/song-info';
+import type { VideoInfo } from '@/providers/video-info';
 import type { ProviderName } from './providers';
 
 export type SyncedLyricsPluginConfig = {
@@ -34,11 +34,11 @@ export interface LyricResult {
 }
 
 // prettier-ignore
-export type SearchSongInfo = Pick<SongInfo, 'title' | 'alternativeTitle' | 'artist' | 'album' | 'songDuration' | 'videoId' | 'tags'>;
+export type SearchVideoInfo = Pick<VideoInfo, 'title' | 'alternativeTitle' | 'artist' | 'album' | 'songDuration' | 'videoId' | 'tags'>;
 
 export interface LyricProvider {
   name: string;
   baseUrl: string;
 
-  search(songInfo: SearchSongInfo): Promise<LyricResult | null>;
+  search(videoInfo: SearchVideoInfo): Promise<LyricResult | null>;
 }

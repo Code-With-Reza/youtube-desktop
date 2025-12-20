@@ -7,7 +7,7 @@ export const CaptionsSettingButton = (props: CaptionsSettingsButtonProps) => (
   <yt-icon-button
     aria-disabled={false}
     aria-label={props.label}
-    class="player-captions-button style-scope ytmusic-player-bar"
+    class="player-captions-button style-scope ytyoutube-player-bar"
     icon={'yt-icons:subtitles'}
     on:click={(e) => props.onClick(e)}
     role={'button'}
