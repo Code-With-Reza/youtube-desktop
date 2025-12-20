@@ -15,7 +15,7 @@ declare global {
   }
 
   interface DocumentEventMap {
-    'peard:audio-can-play': CustomEvent<Compressor>;
+    'ytd:audio-can-play': CustomEvent<Compressor>;
     'videodatachange': CustomEvent<VideoDataChanged>;
   }
 

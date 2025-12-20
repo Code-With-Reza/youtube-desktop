@@ -80,19 +80,19 @@ async function onApiLoaded() {
       .querySelector<HTMLElement>('.next-button.ytmusic-player-bar')
       ?.click();
   });
-  window.ipcRenderer.on('peard:play', (_) => {
+  window.ipcRenderer.on('ytd:play', (_) => {
     api?.playVideo();
   });
-  window.ipcRenderer.on('peard:pause', (_) => {
+  window.ipcRenderer.on('ytd:pause', (_) => {
     api?.pauseVideo();
   });
-  window.ipcRenderer.on('peard:toggle-play', (_) => {
+  window.ipcRenderer.on('ytd:toggle-play', (_) => {
     if (api?.getPlayerState() === 2) api?.playVideo();
     else api?.pauseVideo();
   });
-  window.ipcRenderer.on('peard:seek-to', (_, t: number) => api!.seekTo(t));
-  window.ipcRenderer.on('peard:seek-by', (_, t: number) => api!.seekBy(t));
-  window.ipcRenderer.on('peard:shuffle', () => {
+  window.ipcRenderer.on('ytd:seek-to', (_, t: number) => api!.seekTo(t));
+  window.ipcRenderer.on('ytd:seek-by', (_, t: number) => api!.seekBy(t));
+  window.ipcRenderer.on('ytd:shuffle', () => {
     document
       .querySelector<
         HTMLElement & { queue: { shuffle: () => void } }
@@ -109,12 +109,12 @@ async function onApiLoaded() {
     return isShuffled !== null;
   };
 
-  window.ipcRenderer.on('peard:get-shuffle', () => {
-    window.ipcRenderer.send('peard:get-shuffle-response', isShuffled());
+  window.ipcRenderer.on('ytd:get-shuffle', () => {
+    window.ipcRenderer.send('ytd:get-shuffle-response', isShuffled());
   });
 
   window.ipcRenderer.on(
-    'peard:update-like',
+    'ytd:update-like',
     (_, status: 'LIKE' | 'DISLIKE' = 'LIKE') => {
       document
         .querySelector<
@@ -123,7 +123,7 @@ async function onApiLoaded() {
         ?.updateLikeStatus(status);
     },
   );
-  window.ipcRenderer.on('peard:switch-repeat', (_, repeat = 1) => {
+  window.ipcRenderer.on('ytd:switch-repeat', (_, repeat = 1) => {
     for (let i = 0; i < repeat; i++) {
       document
         .querySelector<
@@ -132,7 +132,7 @@ async function onApiLoaded() {
         ?.onRepeatButtonClick();
     }
   });
-  window.ipcRenderer.on('peard:update-volume', (_, volume: number) => {
+  window.ipcRenderer.on('ytd:update-volume', (_, volume: number) => {
     document
       .querySelector<
         HTMLElement & { updateVolume: (volume: number) => void }
@@ -162,18 +162,18 @@ async function onApiLoaded() {
     }
   };
 
-  window.ipcRenderer.on('peard:get-fullscreen', () => {
-    window.ipcRenderer.send('peard:set-fullscreen', isFullscreen());
+  window.ipcRenderer.on('ytd:get-fullscreen', () => {
+    window.ipcRenderer.send('ytd:set-fullscreen', isFullscreen());
   });
 
   window.ipcRenderer.on(
-    'peard:click-fullscreen-button',
+    'ytd:click-fullscreen-button',
     (_, fullscreen: boolean | undefined) => {
       clickFullscreenButton(fullscreen ?? false);
     },
   );
 
-  window.ipcRenderer.on('peard:toggle-mute', (_) => {
+  window.ipcRenderer.on('ytd:toggle-mute', (_) => {
     document
       .querySelector<
         HTMLElement & { onVolumeClick: () => void }
@@ -181,9 +181,9 @@ async function onApiLoaded() {
       ?.onVolumeClick();
   });
 
-  window.ipcRenderer.on('peard:get-queue', () => {
+  window.ipcRenderer.on('ytd:get-queue', () => {
     const queue = document.querySelector<QueueElement>('#queue');
-    window.ipcRenderer.send('peard:get-queue-response', {
+    window.ipcRenderer.send('ytd:get-queue-response', {
       items: queue?.queue.getItems(),
       autoPlaying: queue?.queue.autoPlaying,
       continuation: queue?.queue.continuation,
@@ -191,7 +191,7 @@ async function onApiLoaded() {
   });
 
   window.ipcRenderer.on(
-    'peard:add-to-queue',
+    'ytd:add-to-queue',
     (_, videoId: string, queueInsertPosition: string) => {
       const queue = document.querySelector<QueueElement>('#queue');
       const app = document.querySelector<YouTubeAppElement>('ytmusic-app');
@@ -246,7 +246,7 @@ async function onApiLoaded() {
     },
   );
   window.ipcRenderer.on(
-    'peard:move-in-queue',
+    'ytd:move-in-queue',
     (_, fromIndex: number, toIndex: number) => {
       const queue = document.querySelector<QueueElement>('#queue');
       queue?.dispatch({
@@ -258,21 +258,21 @@ async function onApiLoaded() {
       });
     },
   );
-  window.ipcRenderer.on('peard:remove-from-queue', (_, index: number) => {
+  window.ipcRenderer.on('ytd:remove-from-queue', (_, index: number) => {
     const queue = document.querySelector<QueueElement>('#queue');
     queue?.dispatch({
       type: 'REMOVE_ITEM',
       payload: index,
     });
   });
-  window.ipcRenderer.on('peard:set-queue-index', (_, index: number) => {
+  window.ipcRenderer.on('ytd:set-queue-index', (_, index: number) => {
     const queue = document.querySelector<QueueElement>('#queue');
     queue?.dispatch({
       type: 'SET_INDEX',
       payload: index,
     });
   });
-  window.ipcRenderer.on('peard:clear-queue', () => {
+  window.ipcRenderer.on('ytd:clear-queue', () => {
     const queue = document.querySelector<QueueElement>('#queue');
     queue?.queue.store.store.dispatch({
       type: 'SET_PLAYER_PAGE_INFO',
@@ -284,7 +284,7 @@ async function onApiLoaded() {
   });
 
   window.ipcRenderer.on(
-    'peard:search',
+    'ytd:search',
     async (_, query: string, params?: string, continuation?: string) => {
       const app = document.querySelector<YouTubeAppElement>('ytmusic-app');
       const searchBox =
@@ -307,7 +307,7 @@ async function onApiLoaded() {
         suggestStats: searchBox.getSearchboxStats(),
       });
 
-      window.ipcRenderer.send('peard:search-results', result);
+      window.ipcRenderer.send('ytd:search-results', result);
     },
   );
 
@@ -334,7 +334,7 @@ async function onApiLoaded() {
 
   const audioCanPlayEventDispatcher = () => {
     document.dispatchEvent(
-      new CustomEvent('peard:audio-can-play', {
+      new CustomEvent('ytd:audio-can-play', {
         detail: {
           audioContext,
           audioSource,
@@ -356,7 +356,7 @@ async function onApiLoaded() {
 
   video.addEventListener('loadstart', loadstartListener, { passive: true });
 
-  window.ipcRenderer.send('peard:player-api-loaded');
+  window.ipcRenderer.send('ytd:player-api-loaded');
 
   // Navigate to "Starting page"
   const startingPage: string = window.mainConfig.get('options.startingPage');
