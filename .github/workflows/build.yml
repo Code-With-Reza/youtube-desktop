@@ -78,6 +78,9 @@ jobs:
         run: |
           pnpm release:win
 
+      - name: Build
+        run: pnpm build
+
       - name: Test
         uses: coactions/setup-xvfb@v1
         env:
