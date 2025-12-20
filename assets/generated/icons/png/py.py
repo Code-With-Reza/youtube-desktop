@@ -6,16 +6,16 @@ def resize_svg(svg_path, temp_svg_path, size):
     # Parse the SVG file
     tree = etree.parse(svg_path)
     root = tree.getroot()
-
+    
     # Update width, height, and viewBox attributes
     root.set("width", str(size))
     root.set("height", str(size))
-
+    
     if "viewBox" not in root.attrib:
         width = int(root.get("width", size))
         height = int(root.get("height", size))
         root.set("viewBox", f"0 0 {width} {height}")
-
+    
     # Write the resized SVG to a temporary file
     tree.write(temp_svg_path)
 
@@ -25,10 +25,10 @@ def generate_png_assets_from_svg(svg_path, output_folder, sizes):
     temp_svg_path = "temp_resized.svg"
     for size in sizes:
         output_path = os.path.join(output_folder, f"{size}x{size}.png")
-
+        
         # Resize the SVG
         resize_svg(svg_path, temp_svg_path, size)
-
+        
         # Convert the resized SVG to PNG using rsvg-convert
         subprocess.run([
             "rsvg-convert",
