@@ -217,7 +217,7 @@ export const onMainLoad = async ({
 
   ipc.handle('download-song', (url: string) => downloadSong(url));
   ipc.on('ytd:video-src-changed', (data: GetPlayerResponse) => {
-    playingUrl = (data.microformat as any).microformatDataRenderer.urlCanonical;
+    playingUrl = (data.microformat as any)?.microformatDataRenderer?.urlCanonical;
   });
   ipc.handle('download-playlist-request', async (url: string) =>
     downloadPlaylist(url),

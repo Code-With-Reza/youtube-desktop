@@ -163,11 +163,11 @@ electronDebug({
   showDevTools: false, // Disable automatic devTools on new window
 });
 
-let icon = 'assets/YouTube.png';
+let icon = path.join(__dirname, '../../assets/YouTube.png');
 if (process.platform === 'win32') {
-  icon = 'assets/generated/icons/win/icon.ico';
+  icon = path.join(__dirname, '../../assets/generated/icons/win/icon.ico');
 } else if (process.platform === 'darwin') {
-  icon = 'assets/generated/icons/mac/icon.icns';
+  icon = path.join(__dirname, '../../assets/generated/icons/mac/icon.icns');
 }
 
 function onClosed() {

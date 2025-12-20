@@ -14,7 +14,7 @@ export default createPlugin({
   description: () => 'Load custom extensions from the Extensions folder',
   restartNeeded: true,
   config: {
-    enabled: true,
+    enabled: false,
   } as ExtensionsConfig,
   menu: async ({ setConfig }) => {
     const { extensionDirectory, directories } = getLocalExtensions();
