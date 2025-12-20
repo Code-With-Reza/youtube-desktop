@@ -1,4 +1,4 @@
-name: Build Pear Desktop
+name: Build Youtube Desktop
 
 on:
   push:
@@ -11,7 +11,7 @@ env:
 jobs:
   build:
     if: github.event.pull_request.draft == false
-    name: Build Pear Desktop
+    name: Build Youtube Desktop
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
@@ -88,7 +88,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    name: Release Pear Desktop
+    name: Release Youtube Desktop
     if: github.repository == 'pear-devs/pear-desktop' && github.ref == 'refs/heads/master'
     needs: build
     steps:

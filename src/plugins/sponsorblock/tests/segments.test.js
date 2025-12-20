@@ -5,32 +5,32 @@ import { sortSegments } from '../segments';
 test('Segment sorting', () => {
   expect(
     sortSegments([
-      [0, 3],
-      [7, 8],
-      [5, 6],
+      { segment: [0, 3], category: 'sponsor' },
+      { segment: [7, 8], category: 'sponsor' },
+      { segment: [5, 6], category: 'sponsor' },
     ]),
   ).toEqual([
-    [0, 3],
-    [5, 6],
-    [7, 8],
+    { segment: [0, 3], category: 'sponsor' },
+    { segment: [5, 6], category: 'sponsor' },
+    { segment: [7, 8], category: 'sponsor' },
   ]);
 
   expect(
     sortSegments([
-      [0, 5],
-      [6, 8],
-      [4, 6],
+      { segment: [0, 5], category: 'sponsor' },
+      { segment: [6, 8], category: 'sponsor' },
+      { segment: [4, 6], category: 'sponsor' },
     ]),
-  ).toEqual([[0, 8]]);
+  ).toEqual([{ segment: [0, 8], category: 'sponsor' }]);
 
   expect(
     sortSegments([
-      [0, 6],
-      [7, 8],
-      [4, 6],
+      { segment: [0, 6], category: 'sponsor' },
+      { segment: [7, 8], category: 'sponsor' },
+      { segment: [4, 6], category: 'sponsor' },
     ]),
   ).toEqual([
-    [0, 6],
-    [7, 8],
+    { segment: [0, 6], category: 'sponsor' },
+    { segment: [7, 8], category: 'sponsor' },
   ]);
 });
