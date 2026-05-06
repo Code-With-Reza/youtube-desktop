@@ -1,12 +1,11 @@
 name: Build Youtube Desktop
 
 on:
-  pull_request:
   workflow_dispatch:
 
 env:
   NODE_VERSION: "22.x"
-  # Fixes Node 20 deprecation warnings
+  # Silences the Node.js 20 deprecation warnings
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
 
 jobs:
@@ -17,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false 
       matrix:
-        os: [ macos-latest, ubuntu-latest, windows-latest ]
+        os:[ macos-latest, ubuntu-latest, windows-latest ]
 
     steps:
       - uses: actions/checkout@v4
@@ -35,9 +34,8 @@ jobs:
 
       - name: Install dependencies
         shell: bash
+        # Deleting the Mac-generated lockfile forces pnpm to resolve the correct OS binaries
         run: |
-          # Deleting the Mac-generated lockfile forces pnpm to resolve
-          # and download the correct binaries for Linux and Windows.
           rm -f pnpm-lock.yaml
           pnpm install
 
@@ -69,18 +67,41 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm release:win
 
+      # Backup build if releases didn't run
       - name: Build
         if: github.event_name != 'pull_request'
         run: pnpm build
 
+      # 100% guarantee we capture the files! This grabs the built apps so the Release job can upload them.
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        if: github.repository == 'pear-devs/pear-desktop' && github.event_name != 'pull_request'
+        with:
+          name: Youtube-Desktop-${{ matrix.os }}
+          # Searches standard electron-builder output folders for the executables
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.snap
+            dist/*.zip
+            build/*.exe
+            build/*.dmg
+            build/*.AppImage
+            build/*.deb
+            build/*.snap
+          retention-days: 7
+
+      # 120s timeout fixes the macOS hanging test issue
       - name: Test
         uses: coactions/setup-xvfb@v1
         env:
           CI: true
-          # Kept this! It successfully fixed your Mac timeout issue in the last run.
           PLAYWRIGHT_TEST_TIMEOUT: "120000"
         with:
           run: pnpm test:debug
+
 
   release:
     runs-on: ubuntu-latest
@@ -91,36 +112,66 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+          
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10
-      
+          
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-      
+          
       - name: Install dependencies
         shell: bash
         run: |
           rm -f pnpm-lock.yaml
           pnpm install
-      
+          
       - name: Get version
         run: echo "VERSION_TAG=v$(node -pe "require('./package.json').version")" >> $GITHUB_ENV
-      
+        
       - name: Check if tag exists
-        run: echo "VERSION_HASH=$(git rev-parse -q --verify 'refs/tags/${{ env.VERSION_TAG }}' || echo '')" >> $GITHUB_ENV
-      
+        run: |
+          echo "VERSION_HASH=$(git rev-parse -q --verify 'refs/tags/${{ env.VERSION_TAG }}' || echo '')" >> $GITHUB_ENV
+          echo "CHANGELOG_ANCHOR=$(echo ${{ env.VERSION_TAG }} | sed -e 's/\.//g')" >> $GITHUB_ENV
+
+      # DOWNLOAD ALL THE BUILT APPS FROM WINDOWS, MAC, AND LINUX
+      - name: Download all build artifacts
+        if: env.VERSION_HASH == ''
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded-assets
+
+      # CREATES THE RELEASE AND UPLOADS EVERY FILE TO IT
       - name: Publish Release
         if: env.VERSION_HASH == ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION_TAG }}
           name: ${{ env.VERSION_TAG }}
-          body: "Release ${{ env.VERSION_TAG }}"
+          draft: false
+          prerelease: false
+          # This grabs all the downloaded .exe, .dmg, and .AppImage files and attaches them!
+          files: downloaded-assets/**/*
+          body: |
+            See[changelog](https://github.com/pear-devs/pear-desktop/blob/master/changelog.md#${{ env.CHANGELOG_ANCHOR }}) for the list of updates and the full diff.
+            Thanks to all contributors! 🏅
+            (Note for Windows: `Pear-Desktop-Web-Setup-${{ env.VERSION_TAG }}.exe` is an installer, and `Pear-Desktop-${{ env.VERSION_TAG }}.exe` is a portable version)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update changelog
+        if: env.VERSION_HASH == ''
+        run: pnpm changelog
+
+      - name: Commit changelog
+        if: env.VERSION_HASH == ''
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Update changelog for ${{ env.VERSION_TAG }}
+          file_pattern: "changelog.md"
+          commit_user_name: CI
+          commit_user_email: KikoTs@users.noreply.github.com
