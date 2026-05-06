@@ -44,6 +44,10 @@
     "pnpm": ">=10"
   },
   "pnpm": {
+    "supportedArchitectures": {
+      "os": ["linux", "darwin", "win32"],
+      "cpu": ["x64", "arm64"]
+    },
     "overrides": {
       "vite": "npm:rolldown-vite@7.3.0",
       "node-gyp": "11.4.2",
