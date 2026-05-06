@@ -6,7 +6,7 @@ on:
 
 env:
   NODE_VERSION: "22.x"
-  # 1. Fixes Node 20 deprecation warnings
+  # Fixes Node 20 deprecation warnings
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
 
 jobs:
@@ -33,14 +33,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: Configure pnpm for cross-platform
-        run: |
-          echo "supported-architectures.os=linux,darwin,win32" >> .npmrc
-          echo "supported-architectures.cpu=x64,arm64" >> .npmrc
-
       - name: Install dependencies
-        # We use 'pnpm install' without --frozen-lockfile to fix the Platform error
-        run: pnpm install
+        shell: bash
+        run: |
+          # Deleting the Mac-generated lockfile forces pnpm to resolve
+          # and download the correct binaries for Linux and Windows.
+          rm -f pnpm-lock.yaml
+          pnpm install
 
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps
@@ -78,6 +77,7 @@ jobs:
         uses: coactions/setup-xvfb@v1
         env:
           CI: true
+          # Kept this! It successfully fixed your Mac timeout issue in the last run.
           PLAYWRIGHT_TEST_TIMEOUT: "120000"
         with:
           run: pnpm test:debug
@@ -91,21 +91,30 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10
+      
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+      
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        shell: bash
+        run: |
+          rm -f pnpm-lock.yaml
+          pnpm install
+      
       - name: Get version
         run: echo "VERSION_TAG=v$(node -pe "require('./package.json').version")" >> $GITHUB_ENV
+      
       - name: Check if tag exists
         run: echo "VERSION_HASH=$(git rev-parse -q --verify 'refs/tags/${{ env.VERSION_TAG }}' || echo '')" >> $GITHUB_ENV
+      
       - name: Publish Release
         if: env.VERSION_HASH == ''
         uses: softprops/action-gh-release@v2
