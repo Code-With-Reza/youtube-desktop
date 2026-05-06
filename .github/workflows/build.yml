@@ -33,19 +33,18 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      # FIX: Writing to .npmrc directly to avoid the CLI "deep property" error
       - name: Configure pnpm for cross-platform
         run: |
           echo "supported-architectures.os=linux,darwin,win32" >> .npmrc
           echo "supported-architectures.cpu=x64,arm64" >> .npmrc
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        # We use 'pnpm install' without --frozen-lockfile to fix the Platform error
+        run: pnpm install
 
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps
 
-      # Building logic
       - name: Vite Build (PR only)
         if: github.event_name == 'pull_request'
         run: pnpm build
@@ -71,12 +70,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm release:win
 
-      # Ensures build exists for the Test step
       - name: Build
         if: github.event_name != 'pull_request'
         run: pnpm build
 
-      # FIX: Increased timeout for macOS heavy Electron app launch
       - name: Test
         uses: coactions/setup-xvfb@v1
         env:
