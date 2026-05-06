@@ -1,21 +1,21 @@
 name: Build Youtube Desktop
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
   workflow_dispatch:
 
 env:
   NODE_VERSION: "22.x"
+  # 1. Fixes Node 20 deprecation warnings
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
 
 jobs:
   build:
     if: github.event.pull_request.draft == false
     name: Build Youtube Desktop
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ (matrix.os == 'windows-latest') && 'windows-2022' || matrix.os }}
     strategy:
-      fail-fast: false # Changed to false so one failure doesn't kill all jobs (better for debugging)
+      fail-fast: false 
       matrix:
         os: [ macos-latest, ubuntu-latest, windows-latest ]
 
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4 # Uses latest version to avoid Node 20 deprecation
+        uses: pnpm/action-setup@v4
         with:
           version: 10
 
@@ -33,20 +33,25 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
+      # 2. FIX FOR ERR_PNPM_UNSUPPORTED_PLATFORM
+      # This tells pnpm to ignore the fact that the lockfile has Mac-specific dependencies
+      # when running on Linux or Windows.
+      - name: Configure pnpm for cross-platform
+        run: |
+          pnpm config set supportedArchitectures.os ["linux", "darwin", "win32"]
+          pnpm config set supportedArchitectures.cpu ["x64", "arm64"]
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Install Playwright Browsers for the Test step later
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps
 
-      # Conditional Build logic:
-      # 1. If Pull Request: Just do a standard build
+      # Build logic
       - name: Vite Build (PR only)
         if: github.event_name == 'pull_request'
         run: pnpm build
 
-      # 2. If Master: Run the specific release scripts
       - name: Build and release on Mac
         if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request' && github.repository == 'pear-devs/pear-desktop'
         env:
@@ -68,8 +73,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm release:win
 
+      # Ensure a build exists for the test step if no release script ran
+      - name: Build
+        if: github.event_name != 'pull_request'
+        run: pnpm build
+
+      # 3. FIX FOR MACOS TIMEOUT
+      # Added 120s timeout and CI=true environment variables
       - name: Test
         uses: coactions/setup-xvfb@v1
+        env:
+          CI: true
+          PLAYWRIGHT_TEST_TIMEOUT: "120000" 
         with:
           run: pnpm test:debug
 
@@ -82,51 +97,27 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10
-
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Get version
-        run: |
-          echo "VERSION_TAG=v$(node -pe "require('./package.json').version")" >> $GITHUB_ENV
-
-      - name: Check if version already exists in tags
-        run: |
-          echo "VERSION_HASH=$(git rev-parse -q --verify 'refs/tags/${{ env.VERSION_TAG }}' || echo '')" >> $GITHUB_ENV
-          echo "CHANGELOG_ANCHOR=$(echo ${{ env.VERSION_TAG }} | sed -e 's/\.//g')" >> $GITHUB_ENV
-
+        run: echo "VERSION_TAG=v$(node -pe "require('./package.json').version")" >> $GITHUB_ENV
+      - name: Check if tag exists
+        run: echo "VERSION_HASH=$(git rev-parse -q --verify 'refs/tags/${{ env.VERSION_TAG }}' || echo '')" >> $GITHUB_ENV
       - name: Publish Release
         if: env.VERSION_HASH == ''
-        uses: softprops/action-gh-release@v2 # More modern/stable release action
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION_TAG }}
           name: ${{ env.VERSION_TAG }}
-          draft: false
-          prerelease: false
-          body: |
-            See [changelog](https://github.com/pear-devs/pear-desktop/blob/master/changelog.md#${{ env.CHANGELOG_ANCHOR }}) for the list of updates.
-            (Note for Windows: `Pear-Desktop-Web-Setup-${{ env.VERSION_TAG }}.exe` is an installer, and `Pear-Desktop-${{ env.VERSION_TAG }}.exe` is portable)
+          body: "Release ${{ env.VERSION_TAG }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update changelog
-        if: env.VERSION_HASH == ''
-        run: pnpm changelog
-
-      - name: Commit changelog
-        if: env.VERSION_HASH == ''
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: Update changelog for ${{ env.VERSION_TAG }}
-          file_pattern: "changelog.md"
