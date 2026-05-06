@@ -33,13 +33,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      # 2. FIX FOR ERR_PNPM_UNSUPPORTED_PLATFORM
-      # This tells pnpm to ignore the fact that the lockfile has Mac-specific dependencies
-      # when running on Linux or Windows.
+      # FIX: Writing to .npmrc directly to avoid the CLI "deep property" error
       - name: Configure pnpm for cross-platform
         run: |
-          pnpm config set supportedArchitectures.os ["linux", "darwin", "win32"]
-          pnpm config set supportedArchitectures.cpu ["x64", "arm64"]
+          echo "supported-architectures.os=linux,darwin,win32" >> .npmrc
+          echo "supported-architectures.cpu=x64,arm64" >> .npmrc
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -47,7 +45,7 @@ jobs:
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps
 
-      # Build logic
+      # Building logic
       - name: Vite Build (PR only)
         if: github.event_name == 'pull_request'
         run: pnpm build
@@ -73,18 +71,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm release:win
 
-      # Ensure a build exists for the test step if no release script ran
+      # Ensures build exists for the Test step
       - name: Build
         if: github.event_name != 'pull_request'
         run: pnpm build
 
-      # 3. FIX FOR MACOS TIMEOUT
-      # Added 120s timeout and CI=true environment variables
+      # FIX: Increased timeout for macOS heavy Electron app launch
       - name: Test
         uses: coactions/setup-xvfb@v1
         env:
           CI: true
-          PLAYWRIGHT_TEST_TIMEOUT: "120000" 
+          PLAYWRIGHT_TEST_TIMEOUT: "120000"
         with:
           run: pnpm test:debug
 
